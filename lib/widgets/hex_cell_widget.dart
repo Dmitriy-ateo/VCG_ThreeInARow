@@ -79,7 +79,7 @@ class HexCellWidget extends StatefulWidget {
   State<HexCellWidget> createState() => _HexCellWidgetState();
 }
 
-class _HexCellWidgetState extends State<HexCellWidget> with SingleTickerProviderStateMixin {
+class _HexCellWidgetState extends State<HexCellWidget> with TickerProviderStateMixin {
   AnimationController? _controller;
   Animation<double>? _pulseAnimation;
 

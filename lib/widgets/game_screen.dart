@@ -877,7 +877,7 @@ class _GameScreenState extends State<GameScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final double width = constraints.maxWidth;
-        final bool isCompact = width < 480;
+        final bool isCompact = width < 400;
 
         final lang = _gameState.currentLanguage;
         final title = _gameState.isDailyEvent 

@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/game_state.dart';
+import '../models/hex_coord.dart';
 import 'hex_cell_widget.dart';
 import 'hex_item_widget.dart';
 
@@ -108,7 +109,22 @@ class HexBoardWidget extends StatelessWidget {
                         size: R,
                         isEmpty: !gameState.grid.containsKey(cell),
                         isHighlighted: isHighlighted,
-                        onTap: () => gameState.placeItem(cell),
+                        onTap: (Offset localPos) {
+                          final double centerX = hexWidth / 2;
+                          final double centerY = hexHeight / 2;
+                          final double dx = localPos.dx - centerX;
+                          final double dy = localPos.dy - centerY;
+                          
+                          if (dx > 0 && dy > 0 && gameState.level != 1 && gameState.level != 5) {
+                            final neighbor = cell + const HexCoord(0, 1);
+                            if (gameState.currentBoardShape.cells.contains(neighbor) &&
+                                !gameState.grid.containsKey(neighbor)) {
+                              gameState.placeItem(neighbor);
+                              return;
+                            }
+                          }
+                          gameState.placeItem(cell);
+                        },
                       ),
                     );
                   }),

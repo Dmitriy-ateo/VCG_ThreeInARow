@@ -63,7 +63,7 @@ class HexagonPainter extends CustomPainter {
 
 class HexCellWidget extends StatefulWidget {
   final double size; // Radius of hexagon
-  final VoidCallback onTap;
+  final Function(Offset localPos) onTap;
   final bool isEmpty;
   final bool isHighlighted;
 
@@ -82,6 +82,7 @@ class HexCellWidget extends StatefulWidget {
 class _HexCellWidgetState extends State<HexCellWidget> with TickerProviderStateMixin {
   AnimationController? _controller;
   Animation<double>? _pulseAnimation;
+  Offset _localTapPosition = Offset.zero;
 
   @override
   void initState() {
@@ -162,7 +163,10 @@ class _HexCellWidgetState extends State<HexCellWidget> with TickerProviderStateM
     );
 
     return GestureDetector(
-      onTap: widget.onTap,
+      onTapDown: (TapDownDetails details) {
+        _localTapPosition = details.localPosition;
+      },
+      onTap: () => widget.onTap(_localTapPosition),
       behavior: HitTestBehavior.opaque,
       child: cellBody,
     );

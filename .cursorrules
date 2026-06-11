@@ -15,3 +15,8 @@ As an AI assistant working on this codebase, you must follow these rules strictl
 - **Repaint Boundaries**: Wrap animations and static canvas components in `RepaintBoundary` to isolate paint overhead.
 - **Widget Rebuild Control**: Decouple state scopes and use `const` widgets where possible to bypass build cycles.
 - **Zero Analyzer Warnings**: Static analysis must have zero warnings/errors. Run `flutter analyze` after every code change.
+
+## 4. Git Version Control Protocol
+- **Commit & Push**: For each feature or significant task completed, you **MUST** stage, commit, and push the changes to the remote repository.
+- **Commit Messages**: Use concise, clear commit messages summarizing what feature was implemented.
+

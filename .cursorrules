@@ -20,3 +20,6 @@ As an AI assistant working on this codebase, you must follow these rules strictl
 - **Commit & Push**: For each feature or significant task completed, you **MUST** stage, commit, and push the changes to the remote repository.
 - **Commit Messages**: Use concise, clear commit messages summarizing what feature was implemented.
 
+## 5. Mandatory Localization Rule
+- **All UI Text must be Localized**: Hardcoding raw text strings in UI widgets is strictly forbidden. All labels, buttons, dialogs, tutorial guides, stats, and overlays must be routed through the `AppLocalizations` dictionary system.
+

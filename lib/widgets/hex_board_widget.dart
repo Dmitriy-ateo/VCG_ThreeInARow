@@ -115,7 +115,9 @@ class HexBoardWidget extends StatelessWidget {
                           final double dx = localPos.dx - centerX;
                           final double dy = localPos.dy - centerY;
                           
-                          if (dy > 0 && gameState.level != 1 && gameState.level != 5) {
+                          final bool isOccupied = gameState.grid.containsKey(cell);
+                          
+                          if (isOccupied && dy > 0 && gameState.level != 1 && gameState.level != 5) {
                             HexCoord? neighbor;
                             if (dx > 0) {
                               // Bottom-right quadrant -> bottom-right neighbor

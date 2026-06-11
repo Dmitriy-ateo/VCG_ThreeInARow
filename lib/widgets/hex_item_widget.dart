@@ -6,11 +6,15 @@ class GlassBallPainter extends CustomPainter {
   final Color color;
   final bool isTarget;
   final bool isBomb;
+  final bool isExploding;
+  final double explosionProgress;
 
   GlassBallPainter({
     required this.color,
     this.isTarget = false,
     this.isBomb = false,
+    this.isExploding = false,
+    this.explosionProgress = 0.0,
   });
 
   @override
@@ -113,7 +117,7 @@ class GlassBallPainter extends CustomPainter {
     }
 
     // Draw spark on top of everything
-    if (isBomb) {
+    if (isBomb && !isExploding) {
       final sparkCenter = Offset(center.dx - radius * 0.45, center.dy - radius * 1.25);
       
       // Glow behind spark
@@ -140,6 +144,40 @@ class GlassBallPainter extends CustomPainter {
           sparkPaint,
         );
       }
+    }
+
+    if (isExploding) {
+      // Draw expanding fiery shockwave ring
+      final double waveRadius = radius * 3.0 * explosionProgress;
+      final double opacity = (1.0 - explosionProgress).clamp(0.0, 1.0);
+      
+      // Blast wave paint (orange-red neon stroke)
+      final wavePaint = Paint()
+        ..color = const Color(0xFFFF4500).withValues(alpha: opacity)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = (6.0 - 4.0 * explosionProgress)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4.0);
+      canvas.drawCircle(center, waveRadius, wavePaint);
+
+      // Inner yellow flame ring
+      final innerWavePaint = Paint()
+        ..color = const Color(0xFFFFD700).withValues(alpha: opacity)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3.0;
+      canvas.drawCircle(center, waveRadius * 0.85, innerWavePaint);
+
+      // Core fire expansion
+      final coreFirePaint = Paint()
+        ..shader = RadialGradient(
+          colors: [
+            Colors.white.withValues(alpha: opacity * 0.9),
+            const Color(0xFFFFD700).withValues(alpha: opacity * 0.7),
+            const Color(0xFFFF4500).withValues(alpha: opacity * 0.3),
+            Colors.transparent,
+          ],
+          stops: const [0.0, 0.3, 0.7, 1.0],
+        ).createShader(Rect.fromCircle(center: center, radius: waveRadius));
+      canvas.drawCircle(center, waveRadius, coreFirePaint);
     }
   }
 
@@ -179,7 +217,9 @@ class GlassBallPainter extends CustomPainter {
   bool shouldRepaint(GlassBallPainter oldDelegate) {
     return oldDelegate.color != color ||
         oldDelegate.isTarget != isTarget ||
-        oldDelegate.isBomb != isBomb;
+        oldDelegate.isBomb != isBomb ||
+        oldDelegate.isExploding != isExploding ||
+        oldDelegate.explosionProgress != explosionProgress;
   }
 }
 
@@ -229,17 +269,31 @@ class _HexItemWidgetState extends State<HexItemWidget> with SingleTickerProvider
     
     // If the item status changes to matched, animate exit
     if (widget.item.isMatched && !oldWidget.item.isMatched) {
-      _scaleAnimation = Tween<double>(
-        begin: _controller.value,
-        end: 0.0,
-      ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInBack));
+      if (widget.item.isBomb) {
+        _scaleAnimation = Tween<double>(
+          begin: _controller.value,
+          end: 2.2,
+        ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
-      _opacityAnimation = Tween<double>(
-        begin: _controller.value,
-        end: 0.0,
-      ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
+        _opacityAnimation = Tween<double>(
+          begin: _controller.value,
+          end: 0.0,
+        ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInCubic));
 
-      _controller.duration = const Duration(milliseconds: 280);
+        _controller.duration = const Duration(milliseconds: 380);
+      } else {
+        _scaleAnimation = Tween<double>(
+          begin: _controller.value,
+          end: 0.0,
+        ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInBack));
+
+        _opacityAnimation = Tween<double>(
+          begin: _controller.value,
+          end: 0.0,
+        ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
+
+        _controller.duration = const Duration(milliseconds: 280);
+      }
       _controller.forward(from: 0.0);
     }
   }
@@ -258,6 +312,9 @@ class _HexItemWidgetState extends State<HexItemWidget> with SingleTickerProvider
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
+        final bool isExploding = widget.item.isBomb && widget.item.isMatched;
+        final double progress = isExploding ? _controller.value : 0.0;
+
         return Transform.scale(
           scale: _scaleAnimation.value,
           child: Opacity(
@@ -271,6 +328,8 @@ class _HexItemWidgetState extends State<HexItemWidget> with SingleTickerProvider
                   color: color,
                   isTarget: widget.item.isTarget,
                   isBomb: widget.item.isBomb,
+                  isExploding: isExploding,
+                  explosionProgress: progress,
                 ),
               ),
             ),

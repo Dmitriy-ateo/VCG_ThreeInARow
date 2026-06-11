@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/game_state.dart';
+import '../models/localization.dart';
 import 'hex_board_widget.dart';
 import 'queue_widget.dart';
 
@@ -31,16 +32,270 @@ class _GameScreenState extends State<GameScreen> {
 
 
 
+  void _showSettingsModal() {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Settings',
+      barrierColor: Colors.black.withOpacity(0.75),
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, anim1, anim2) {
+        return Center(
+          child: ListenableBuilder(
+            listenable: _gameState,
+            builder: (context, _) {
+              final String lang = _gameState.currentLanguage;
+              return Container(
+                width: 320,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF151426),
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.08),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF00F0FF).withOpacity(0.08),
+                      blurRadius: 30,
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Header
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            AppLocalizations.translate('settings_title', lang),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            icon: const Icon(Icons.close_rounded, color: Colors.white60),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Language Section
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          AppLocalizations.translate('settings_language', lang),
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.4),
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Language Selector Options
+                      _buildLanguageOption('en', '🇬🇧 English', lang),
+                      const SizedBox(height: 8),
+                      _buildLanguageOption('de', '🇩🇪 Deutsch', lang),
+                      const SizedBox(height: 8),
+                      _buildLanguageOption('uk', '🇺🇦 Українська', lang),
+                      const SizedBox(height: 24),
+
+                      // Reset Progress Option
+                      ElevatedButton(
+                        onPressed: () {
+                          _gameState.resetProgress();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                AppLocalizations.translate('settings_reset_confirm', lang),
+                                style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                              ),
+                              backgroundColor: Colors.cyanAccent,
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                          Navigator.of(context).pop();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFF4D4D).withOpacity(0.1),
+                          foregroundColor: const Color(0xFFFF4D4D),
+                          minimumSize: const Size(double.infinity, 44),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            side: const BorderSide(color: Color(0xFFFF4D4D), width: 1.0),
+                          ),
+                        ),
+                        child: Text(
+                          AppLocalizations.translate('settings_reset', lang),
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+      transitionBuilder: (context, anim1, anim2, child) {
+        return Transform.scale(
+          scale: CurvedAnimation(parent: anim1, curve: Curves.easeOutBack).value,
+          child: FadeTransition(opacity: anim1, child: child),
+        );
+      },
+    );
+  }
+
+  Widget _buildLanguageOption(String code, String name, String currentLang) {
+    final bool isSelected = code == currentLang;
+    return GestureDetector(
+      onTap: () => _gameState.setLanguage(code),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF00F0FF).withOpacity(0.08) : Colors.white.withOpacity(0.02),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF00F0FF).withOpacity(0.5) : Colors.white.withOpacity(0.05),
+            width: 1.5,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF00F0FF).withOpacity(0.1),
+                    blurRadius: 8,
+                  )
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              name,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.white.withOpacity(0.7),
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontSize: 14,
+              ),
+            ),
+            if (isSelected)
+              const Icon(
+                Icons.check_circle_rounded,
+                color: Color(0xFF00F0FF),
+                size: 20,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTutorialCard() {
+    final int step = _gameState.tutorialStep;
+    if (step == 0 || _gameState.level != 1) return const SizedBox.shrink();
+
+    final String titleKey = 'tutorial_step${step}_title';
+    final String msgKey = 'tutorial_step${step}_msg';
+    
+    final String lang = _gameState.currentLanguage;
+    final String title = AppLocalizations.translate(titleKey, lang);
+    final String message = AppLocalizations.translate(msgKey, lang);
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF151426).withOpacity(0.85),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFFFFD700).withOpacity(0.3),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFFD700).withOpacity(0.05),
+            blurRadius: 15,
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFD700).withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.lightbulb_rounded,
+              color: Color(0xFFFFD700),
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Color(0xFFFFD700),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  message,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    switch (_flowState) {
-      case AppFlowState.landing:
-        return _buildLandingScreen();
-      case AppFlowState.menu:
-        return _buildMenuScreen();
-      case AppFlowState.playing:
-        return _buildPlayingScreen();
-    }
+    return ListenableBuilder(
+      listenable: _gameState,
+      builder: (context, _) {
+        switch (_flowState) {
+          case AppFlowState.landing:
+            return _buildLandingScreen();
+          case AppFlowState.menu:
+            return _buildMenuScreen();
+          case AppFlowState.playing:
+            return _buildPlayingScreen();
+        }
+      },
+    );
   }
 
   // 1. LANDING SCREEN
@@ -85,7 +340,7 @@ class _GameScreenState extends State<GameScreen> {
                   Column(
                     children: [
                       Text(
-                        'HEXA MATCH',
+                        AppLocalizations.translate('title_hexa_match', _gameState.currentLanguage),
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 38,
@@ -101,7 +356,7 @@ class _GameScreenState extends State<GameScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'VIBRANT NEON 3-IN-A-ROW',
+                        AppLocalizations.translate('subtitle_neon', _gameState.currentLanguage),
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.45),
                           fontSize: 11,
@@ -162,9 +417,9 @@ class _GameScreenState extends State<GameScreen> {
                         elevation: 8,
                         shadowColor: Colors.cyanAccent.withValues(alpha: 0.4),
                       ),
-                      child: const Text(
-                        'START GAME',
-                        style: TextStyle(
+                      child: Text(
+                        AppLocalizations.translate('btn_start_game', _gameState.currentLanguage),
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 2,
@@ -225,7 +480,7 @@ class _GameScreenState extends State<GameScreen> {
                   Column(
                     children: [
                       Text(
-                        'HEXA MATCH',
+                        AppLocalizations.translate('title_hexa_match', _gameState.currentLanguage),
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 38,
@@ -241,7 +496,7 @@ class _GameScreenState extends State<GameScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'SELECT YOUR CHALLENGE',
+                        AppLocalizations.translate('menu_subtitle', _gameState.currentLanguage),
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.45),
                           fontSize: 11,
@@ -257,8 +512,8 @@ class _GameScreenState extends State<GameScreen> {
                     children: [
                       // Play Campaign Level Button
                       _buildMenuCard(
-                        title: 'PLAY LEVEL ${_gameState.level}',
-                        subtitle: 'Campaign progress saved on device',
+                        title: AppLocalizations.translate('card_play_campaign', _gameState.currentLanguage, args: {'level': '${_gameState.level}'}),
+                        subtitle: AppLocalizations.translate('card_campaign_sub', _gameState.currentLanguage),
                         icon: Icons.play_arrow_rounded,
                         accentColor: Colors.cyanAccent,
                         onTap: () {
@@ -272,11 +527,13 @@ class _GameScreenState extends State<GameScreen> {
 
                       // Daily Challenge Event Button
                       _buildMenuCard(
-                        title: 'DAILY EVENT',
-                        subtitle: 'Unique layout shape • Updates daily',
+                        title: AppLocalizations.translate('card_daily_event', _gameState.currentLanguage),
+                        subtitle: AppLocalizations.translate('card_daily_sub', _gameState.currentLanguage),
                         icon: Icons.calendar_today_rounded,
                         accentColor: Colors.amberAccent,
-                        badgeText: dailyCompleted ? 'COMPLETED' : 'NEW CHALLENGE',
+                        badgeText: dailyCompleted 
+                            ? AppLocalizations.translate('badge_completed', _gameState.currentLanguage) 
+                            : AppLocalizations.translate('badge_new_challenge', _gameState.currentLanguage),
                         badgeColor: dailyCompleted ? Colors.greenAccent : Colors.amberAccent,
                         onTap: () {
                           _gameState.startDailyEvent();
@@ -302,7 +559,7 @@ class _GameScreenState extends State<GameScreen> {
                     child: Column(
                       children: [
                         Text(
-                          'YOUR STATS',
+                          AppLocalizations.translate('panel_stats', _gameState.currentLanguage),
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.35),
                             fontSize: 10,
@@ -314,19 +571,41 @@ class _GameScreenState extends State<GameScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            _buildStatItem('BEST SCORE', '${_gameState.highScore}'),
+                            _buildStatItem(AppLocalizations.translate('stat_best_score', _gameState.currentLanguage), '${_gameState.highScore}'),
                             Container(
                               width: 1,
                               height: 30,
                               color: Colors.white.withValues(alpha: 0.1),
                             ),
-                            _buildStatItem('LEVELS CLEARED', '${_gameState.level - 1}'),
+                            _buildStatItem(AppLocalizations.translate('stat_levels_cleared', _gameState.currentLanguage), '${_gameState.level - 1}'),
                           ],
                         ),
                       ],
                     ),
                   ),
                 ],
+              ),
+            ),
+          ),
+          Positioned(
+            top: 16,
+            right: 16,
+            child: SafeArea(
+              child: IconButton(
+                onPressed: _showSettingsModal,
+                icon: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.04),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white.withOpacity(0.08)),
+                  ),
+                  child: const Icon(
+                    Icons.settings_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
               ),
             ),
           ),
@@ -474,84 +753,84 @@ class _GameScreenState extends State<GameScreen> {
   Widget _buildPlayingScreen() {
     return Scaffold(
       backgroundColor: const Color(0xFF0C0B1B), // Deep space background
-      body: ListenableBuilder(
-        listenable: _gameState,
-        builder: (context, _) {
-          return Stack(
-            children: [
-              // Ambient Neon Background Glows
-              Positioned(
-                top: -120,
-                left: -60,
-                child: Container(
-                  width: 320,
-                  height: 320,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.blue.withValues(alpha: 0.08),
-                  ),
-                ),
+      body: Stack(
+        children: [
+          // Ambient Neon Background Glows
+          Positioned(
+            top: -120,
+            left: -60,
+            child: Container(
+              width: 320,
+              height: 320,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.blue.withValues(alpha: 0.08),
               ),
-              Positioned(
-                bottom: 100,
-                right: -100,
-                child: Container(
-                  width: 400,
-                  height: 400,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(0xFF8E2DE2).withValues(alpha: 0.06),
-                  ),
-                ),
+            ),
+          ),
+          Positioned(
+            bottom: 100,
+            right: -100,
+            child: Container(
+              width: 400,
+              height: 400,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF8E2DE2).withValues(alpha: 0.06),
               ),
+            ),
+          ),
 
-              SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-                  child: Column(
-                    children: [
-                      // Header: Title, Subtitle, and Stats
-                      _buildHeader(),
-                      const SizedBox(height: 12),
-
-
-                      
-                      // The Hexagonal Board
-                      Expanded(
-                        child: Center(
-                          child: Container(
-                            constraints: const BoxConstraints(maxWidth: 500, maxHeight: 500),
-                            child: HexBoardWidget(gameState: _gameState),
-                          ),
-                        ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+              child: Column(
+                children: [
+                  // Header: Title, Subtitle, and Stats
+                  _buildHeader(),
+                  const SizedBox(height: 12),
+                  _buildTutorialCard(),
+                  
+                  // The Hexagonal Board
+                  Expanded(
+                    child: Center(
+                      child: Container(
+                        constraints: const BoxConstraints(maxWidth: 500, maxHeight: 500),
+                        child: HexBoardWidget(gameState: _gameState),
                       ),
-
-                      // Upcoming Items queue
-                      const SizedBox(height: 10),
-                      QueueWidget(
-                        colors: _gameState.upcomingQueue,
-                        onTapItem: _gameState.swapQueueItem,
-                      ),
-                      const SizedBox(height: 12),
-                    ],
+                    ),
                   ),
-                ),
+
+                  // Upcoming Items queue
+                  const SizedBox(height: 10),
+                  QueueWidget(
+                    colors: _gameState.upcomingQueue,
+                    onTapItem: _gameState.swapQueueItem,
+                    highlightIndex: _gameState.level == 1 && _gameState.tutorialStep == 2 ? 2 : null,
+                    languageCode: _gameState.currentLanguage,
+                  ),
+                  const SizedBox(height: 12),
+                ],
               ),
+            ),
+          ),
 
-              // Game Over Overlay
-              if (_gameState.isGameOver) _buildGameOverOverlay(),
+          // Game Over Overlay
+          if (_gameState.isGameOver) _buildGameOverOverlay(),
 
-              // Level Completed Overlay
-              if (_gameState.isLevelCompleted) _buildLevelCompletedOverlay(),
-            ],
-          );
-        },
+          // Level Completed Overlay
+          if (_gameState.isLevelCompleted) _buildLevelCompletedOverlay(),
+        ],
       ),
     );
   }
 
   // DIFFICULTY BADGE WIDGET
   Widget _buildDifficultyBadge(String difficulty) {
+    final lang = _gameState.currentLanguage;
+    final String key = 'badge_difficulty_${difficulty.toLowerCase().replaceAll(' ', '_')}';
+    final String localizedDifficulty = AppLocalizations.translate(key, lang);
+
     Color badgeColor = Colors.grey;
     switch (difficulty) {
       case 'Easy':
@@ -582,7 +861,7 @@ class _GameScreenState extends State<GameScreen> {
         ),
       ),
       child: Text(
-        difficulty.toUpperCase(),
+        localizedDifficulty.toUpperCase(),
         style: TextStyle(
           color: badgeColor,
           fontSize: 8,
@@ -595,10 +874,13 @@ class _GameScreenState extends State<GameScreen> {
 
   // HEADER
   Widget _buildHeader() {
-    final title = _gameState.isDailyEvent ? 'DAILY EVENT' : 'LEVEL ${_gameState.level}';
+    final lang = _gameState.currentLanguage;
+    final title = _gameState.isDailyEvent 
+        ? AppLocalizations.translate('card_daily_event', lang) 
+        : AppLocalizations.translate('card_play_campaign', lang, args: {'level': '${_gameState.level}'});
     final subtitle = _gameState.isDailyEvent 
-        ? 'Clear all 4 target stars on today\'s board' 
-        : 'Clear all target stars to advance';
+        ? AppLocalizations.translate('hud_daily_sub', lang) 
+        : AppLocalizations.translate('hud_campaign_sub', lang);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -665,7 +947,7 @@ class _GameScreenState extends State<GameScreen> {
             ),
           ],
         ),
-        // Right side: Score & Targets Left capsules
+        // Right side: Score & Targets Left capsules + Settings gear
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -738,6 +1020,26 @@ class _GameScreenState extends State<GameScreen> {
                 ],
               ),
             ),
+            const SizedBox(width: 8),
+            // Settings Gear button
+            IconButton(
+              onPressed: _showSettingsModal,
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.04),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white.withOpacity(0.08)),
+                ),
+                child: const Icon(
+                  Icons.settings_rounded,
+                  color: Colors.white,
+                  size: 14,
+                ),
+              ),
+              constraints: const BoxConstraints(),
+              padding: EdgeInsets.zero,
+            ),
           ],
         ),
       ],
@@ -748,6 +1050,7 @@ class _GameScreenState extends State<GameScreen> {
 
   // GAME OVER OVERLAY
   Widget _buildGameOverOverlay() {
+    final lang = _gameState.currentLanguage;
     return Container(
       color: Colors.black.withValues(alpha: 0.85),
       child: Center(
@@ -766,7 +1069,7 @@ class _GameScreenState extends State<GameScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'GAME OVER',
+                AppLocalizations.translate('overlay_game_over', lang),
                 style: TextStyle(
                   color: Colors.redAccent,
                   fontSize: 28,
@@ -782,7 +1085,7 @@ class _GameScreenState extends State<GameScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                'The hexagonal field is fully occupied.',
+                AppLocalizations.translate('overlay_game_over_sub', lang),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.5),
@@ -800,7 +1103,7 @@ class _GameScreenState extends State<GameScreen> {
                 child: Column(
                   children: [
                     Text(
-                      'FINAL SCORE',
+                      AppLocalizations.translate('stat_final_score', lang),
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.3),
                         fontSize: 10,
@@ -842,9 +1145,9 @@ class _GameScreenState extends State<GameScreen> {
                   elevation: 8,
                   shadowColor: Colors.cyanAccent.withValues(alpha: 0.3),
                 ),
-                child: const Text(
-                  'PLAY AGAIN',
-                  style: TextStyle(
+                child: Text(
+                  AppLocalizations.translate('btn_play_again', lang),
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.5,
@@ -860,11 +1163,16 @@ class _GameScreenState extends State<GameScreen> {
 
   // LEVEL COMPLETED OVERLAY
   Widget _buildLevelCompletedOverlay() {
-    final title = _gameState.isDailyEvent ? 'EVENT COMPLETE!' : 'LEVEL CLEARED!';
+    final lang = _gameState.currentLanguage;
+    final title = _gameState.isDailyEvent 
+        ? AppLocalizations.translate('overlay_victory_daily', lang)
+        : AppLocalizations.translate('overlay_victory', lang);
     final desc = _gameState.isDailyEvent 
-        ? 'You have completed today\'s special challenge!'
-        : 'All target stars successfully matched.';
-    final buttonText = _gameState.isDailyEvent ? 'BACK TO MENU' : 'NEXT LEVEL';
+        ? AppLocalizations.translate('overlay_victory_daily_congrats', lang)
+        : AppLocalizations.translate('overlay_victory_congrats', lang);
+    final buttonText = _gameState.isDailyEvent 
+        ? AppLocalizations.translate('btn_main_menu', lang)
+        : AppLocalizations.translate('btn_next_level', lang);
     final buttonColor = _gameState.isDailyEvent ? Colors.cyanAccent : Colors.amberAccent;
 
     return Container(
@@ -919,7 +1227,7 @@ class _GameScreenState extends State<GameScreen> {
                 child: Column(
                   children: [
                     Text(
-                      'CURRENT SCORE',
+                      AppLocalizations.translate('stat_current_score', lang),
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.3),
                         fontSize: 10,

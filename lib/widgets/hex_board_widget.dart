@@ -88,12 +88,18 @@ class HexBoardWidget extends StatelessWidget {
                     double left = px - hexWidth / 2.0;
                     double top = py - hexHeight / 2.0;
 
+                    final bool isHighlighted = gameState.level == 1 &&
+                        (gameState.tutorialStep == 1 || gameState.tutorialStep == 3) &&
+                        cell.q == 0 &&
+                        cell.r == 0;
+
                     return Positioned(
                       left: left,
                       top: top,
                       child: HexCellWidget(
                         size: R,
                         isEmpty: !gameState.grid.containsKey(cell),
+                        isHighlighted: isHighlighted,
                         onTap: () => gameState.placeItem(cell),
                       ),
                     );

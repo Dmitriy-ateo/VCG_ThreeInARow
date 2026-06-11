@@ -31,6 +31,28 @@ class GameState extends ChangeNotifier {
   // Daily Event state
   bool isDailyEvent = false;
 
+  // Localization and Tutorial states
+  String _currentLanguage = 'en';
+  int tutorialStep = 0;
+
+  String get currentLanguage => _currentLanguage;
+
+  void setLanguage(String langCode) {
+    _currentLanguage = langCode;
+    _prefs?.setString('language_code', langCode);
+    notifyListeners();
+  }
+
+  void resetProgress() {
+    level = 1;
+    highScore = 0;
+    if (_prefs != null) {
+      _prefs!.setInt('unlocked_level', 1);
+      _prefs!.setInt('high_score', 0);
+    }
+    startNewGame(BoardShapeType.hexagon, 3);
+  }
+
   // Configuration: Full Color Palette (Premium HSL-based bright colors)
   static const List<Color> colors = [
     Color(0xFFFF4D4D), // Red
@@ -55,6 +77,7 @@ class GameState extends ChangeNotifier {
       _prefs = await SharedPreferences.getInstance();
       level = _prefs!.getInt('unlocked_level') ?? 1;
       highScore = _prefs!.getInt('high_score') ?? 0;
+      _currentLanguage = _prefs!.getString('language_code') ?? 'en';
     } catch (e) {
       debugPrint('Warning: SharedPreferences initialization failed ($e). Falling back to in-memory state.');
     }
@@ -168,6 +191,18 @@ class GameState extends ChangeNotifier {
     if (index < 0 || index >= upcomingQueue.length) return;
     if (index == 0) return; // Already the active next item
 
+    // Level 1 Tutorial Swap Restrictions
+    if (level == 1) {
+      if (tutorialStep == 2) {
+        // Must swap index 2 (Green)
+        if (index != 2) return;
+        tutorialStep = 3;
+      } else {
+        // Swaps disabled in steps 1 and 3
+        return;
+      }
+    }
+
     final Color temp = upcomingQueue[0];
     upcomingQueue[0] = upcomingQueue[index];
     upcomingQueue[index] = temp;
@@ -198,16 +233,53 @@ class GameState extends ChangeNotifier {
     isAnimating = false;
     score = 0;
     
-    targetsLeft = targetSpawnsCount;
+    if (level == 1) {
+      tutorialStep = 1;
+      targetsLeft = 2;
 
-    // 1. Spawn target items on start
-    _spawnTargetItems(targetsLeft);
+      // 1. Spawn fixed target items
+      grid[const HexCoord(0, 1)] = GameItem(
+        id: _generateUniqueId(),
+        color: colors[0], // Red
+        isNew: false,
+        isTarget: true,
+      );
+      grid[const HexCoord(1, 0)] = GameItem(
+        id: _generateUniqueId(),
+        color: colors[2], // Green
+        isNew: false,
+        isTarget: true,
+      );
 
-    // 2. Initialize upcoming queue
-    upcomingQueue = List.generate(3, (_) => _getRandomColor());
+      // 2. Initialize upcoming queue (Red, Blue, Green)
+      upcomingQueue = [colors[0], colors[1], colors[2]];
 
-    // 3. Spawn initial standard items based on board size
-    _spawnRandomItems(initialStandardSpawnsCount, initial: true);
+      // 3. Spawn fixed standard items
+      grid[const HexCoord(0, -1)] = GameItem(
+        id: _generateUniqueId(),
+        color: colors[0], // Red
+        isNew: false,
+        isTarget: false,
+      );
+      grid[const HexCoord(-1, 0)] = GameItem(
+        id: _generateUniqueId(),
+        color: colors[2], // Green
+        isNew: false,
+        isTarget: false,
+      );
+    } else {
+      tutorialStep = 0;
+      targetsLeft = targetSpawnsCount;
+
+      // 1. Spawn target items on start
+      _spawnTargetItems(targetsLeft);
+
+      // 2. Initialize upcoming queue
+      upcomingQueue = List.generate(3, (_) => _getRandomColor());
+
+      // 3. Spawn initial standard items based on board size
+      _spawnRandomItems(initialStandardSpawnsCount, initial: true);
+    }
     
     for (var key in grid.keys) {
       grid[key] = grid[key]!.copyWith(isNew: false);
@@ -300,6 +372,20 @@ class GameState extends ChangeNotifier {
       return;
     }
 
+    // Level 1 Tutorial Placement Restrictions
+    if (level == 1) {
+      if (tutorialStep == 1) {
+        // Step 1: Must place at (0, 0)
+        if (coord.q != 0 || coord.r != 0) return;
+      } else if (tutorialStep == 3) {
+        // Step 3: Must place at (0, 0)
+        if (coord.q != 0 || coord.r != 0) return;
+      } else {
+        // Step 2: Placements disabled, must swap queue first
+        return;
+      }
+    }
+
     Color nextColor = upcomingQueue.removeAt(0);
     upcomingQueue.add(_getRandomColor());
 
@@ -350,10 +436,27 @@ class GameState extends ChangeNotifier {
       _clearNewFlags();
       isAnimating = false;
       
+      // Tutorial step progression after match is successfully cleared
+      if (level == 1) {
+        if (tutorialStep == 1) {
+          tutorialStep = 2;
+        } else if (tutorialStep == 3) {
+          tutorialStep = 0;
+        }
+      }
+      
       _checkLevelOrGameOver();
       notifyListeners();
     } else {
       _clearNewFlags();
+      
+      // In tutorial level, we do not spawn random items
+      if (level == 1) {
+        isAnimating = false;
+        _checkLevelOrGameOver();
+        notifyListeners();
+        return;
+      }
       
       bool spawnedAny = _spawnRandomItems(spawnsPerTurn);
       notifyListeners();

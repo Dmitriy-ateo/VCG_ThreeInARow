@@ -16,8 +16,9 @@ DS3/
 │   ├── models/
 │   │   ├── board_shape.dart  # Geometry and layouts generators
 │   │   ├── game_item.dart    # Ball state model (IDs, colors, flags)
-│   │   ├── game_state.dart   # Game loops, matches scan, levels state
-│   │   └── hex_coord.dart    # Hexagonal coordinate math (q, r, s)
+│   │   ├── game_state.dart   # Game loops, matches scan, levels state, localization state, tutorial steps
+│   │   ├── hex_coord.dart    # Hexagonal coordinate math (q, r, s)
+│   │   └── localization.dart # Translation dictionary mapping EN, DE, UK UI texts
 │   └── widgets/
 │       ├── game_screen.dart     # Main view with flow states & HUD
 │       ├── hex_board_widget.dart# Responsive bounds calculation & positioning
@@ -68,7 +69,12 @@ DS3/
   - `nextLevel()`: Increments level and cycles layout shape.
   - `placeItem(HexCoord coord)`: Main placement turn controller (places ball, clears matches, handles delays, spawns random additions).
   - `swapQueueItem(int index)`: Swaps the next placing color with one of the secondary queue colors for tactical placement.
-  - `checkMatches()`: Scans the board along the 3 hex axes to detect lines of length $\ge 3$.
+- `checkMatches()`: Scans the board along the 3 hex axes to detect lines of length $\ge 3$.
+
+#### [localization.dart](file:///Users/dmitrijkabakov/Work/ThirdParty/FlutterApp/VibeGaming/DS3/lib/models/localization.dart)
+- **`AppLocalizations`**: Translation database supporting English (`en`), German (`de`), and Ukrainian (`uk`).
+- **Key Methods**:
+- `translate(String key, String langCode, {Map<String, String>? args})`: Translates keys dynamically with support for `{placeholder}` replacements.
 
 ---
 

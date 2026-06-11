@@ -88,10 +88,18 @@ class HexBoardWidget extends StatelessWidget {
                     double left = px - hexWidth / 2.0;
                     double top = py - hexHeight / 2.0;
 
-                    final bool isHighlighted = gameState.level == 1 &&
-                        (gameState.tutorialStep == 1 || gameState.tutorialStep == 3) &&
-                        cell.q == 0 &&
-                        cell.r == 0;
+                    bool isHighlighted = false;
+                    if (gameState.level == 1) {
+                      isHighlighted = (gameState.tutorialStep == 1 || gameState.tutorialStep == 3) &&
+                          cell.q == 0 &&
+                          cell.r == 0;
+                    } else if (gameState.level == 5) {
+                      if (gameState.tutorialStep == 1) {
+                        isHighlighted = cell.q == 0 && cell.r == 0;
+                      } else if (gameState.tutorialStep == 2) {
+                        isHighlighted = cell.q == -1 && cell.r == 0;
+                      }
+                    }
 
                     return Positioned(
                       left: left,

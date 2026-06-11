@@ -5,10 +5,12 @@ import '../models/game_item.dart';
 class GlassBallPainter extends CustomPainter {
   final Color color;
   final bool isTarget;
+  final bool isBomb;
 
   GlassBallPainter({
     required this.color,
     this.isTarget = false,
+    this.isBomb = false,
   });
 
   @override
@@ -18,12 +20,30 @@ class GlassBallPainter extends CustomPainter {
     final double radius = min(w, h) / 2.0;
     final center = Offset(w / 2.0, h / 2.0);
 
+    // Draw fuse behind the bomb sphere
+    if (isBomb) {
+      final fusePath = Path();
+      fusePath.moveTo(center.dx, center.dy); // start inside the sphere
+      fusePath.quadraticBezierTo(
+        center.dx - radius * 0.25, center.dy - radius * 0.9,
+        center.dx - radius * 0.45, center.dy - radius * 1.25,
+      );
+      final fusePaint = Paint()
+        ..color = const Color(0xFF6E4A25) // Brown fuse
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3.5
+        ..strokeCap = StrokeCap.round;
+      canvas.drawPath(fusePath, fusePaint);
+    }
+
+    final glowColor = isBomb ? const Color(0xFFFF3333) : color;
+
     // 1. Draw outer neon glow (using radial gradient)
     final glowPaint = Paint()
       ..shader = RadialGradient(
         colors: [
-          color.withValues(alpha: 0.6),
-          color.withValues(alpha: 0.0),
+          glowColor.withValues(alpha: 0.5),
+          glowColor.withValues(alpha: 0.0),
         ],
       ).createShader(Rect.fromCircle(center: center, radius: radius * 1.35));
     canvas.drawCircle(center, radius * 1.35, glowPaint);
@@ -45,13 +65,20 @@ class GlassBallPainter extends CustomPainter {
     canvas.drawCircle(center, radius - 2, basePaint);
 
     // 4. Draw inner glowing core (radial gradient from center)
+    // Bombs have a glowing red core
     final corePaint = Paint()
       ..shader = RadialGradient(
-        colors: [
-          Colors.white.withValues(alpha: 0.85),
-          color.withValues(alpha: 0.65),
-          color.withValues(alpha: 0.05),
-        ],
+        colors: isBomb
+            ? [
+                Colors.white.withValues(alpha: 0.95),
+                const Color(0xFFFF3333).withValues(alpha: 0.85),
+                const Color(0xFFFF3333).withValues(alpha: 0.05),
+              ]
+            : [
+                Colors.white.withValues(alpha: 0.85),
+                color.withValues(alpha: 0.65),
+                color.withValues(alpha: 0.05),
+              ],
         stops: const [0.0, 0.45, 1.0],
       ).createShader(Rect.fromCircle(center: center, radius: radius - 2));
     canvas.drawCircle(center, radius - 4, corePaint);
@@ -83,6 +110,36 @@ class GlassBallPainter extends CustomPainter {
     // 7. Draw star core if it's a target item (scaled up for visibility)
     if (isTarget) {
       _drawStar(canvas, center, radius * 0.55);
+    }
+
+    // Draw spark on top of everything
+    if (isBomb) {
+      final sparkCenter = Offset(center.dx - radius * 0.45, center.dy - radius * 1.25);
+      
+      // Glow behind spark
+      final sparkGlow = Paint()
+        ..shader = RadialGradient(
+          colors: [
+            const Color(0xFFFFD700).withValues(alpha: 0.8), // Gold glow
+            const Color(0xFFFFD700).withValues(alpha: 0.0),
+          ],
+        ).createShader(Rect.fromCircle(center: sparkCenter, radius: radius * 0.45));
+      canvas.drawCircle(sparkCenter, radius * 0.45, sparkGlow);
+
+      // Draw spark lines
+      final sparkPaint = Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0;
+      
+      for (double angle = 0; angle < 2 * pi; angle += pi / 4) {
+        final double len = radius * (0.15 + 0.1 * sin(angle * 2.5));
+        canvas.drawLine(
+          sparkCenter,
+          sparkCenter + Offset(cos(angle) * len, sin(angle) * len),
+          sparkPaint,
+        );
+      }
     }
   }
 
@@ -120,7 +177,9 @@ class GlassBallPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(GlassBallPainter oldDelegate) {
-    return oldDelegate.color != color || oldDelegate.isTarget != isTarget;
+    return oldDelegate.color != color ||
+        oldDelegate.isTarget != isTarget ||
+        oldDelegate.isBomb != isBomb;
   }
 }
 
@@ -211,6 +270,7 @@ class _HexItemWidgetState extends State<HexItemWidget> with SingleTickerProvider
                 painter: GlassBallPainter(
                   color: color,
                   isTarget: widget.item.isTarget,
+                  isBomb: widget.item.isBomb,
                 ),
               ),
             ),

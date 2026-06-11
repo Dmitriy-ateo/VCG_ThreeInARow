@@ -6,6 +6,7 @@ class GameItem {
   final bool isNew;
   final bool isMatched;
   final bool isTarget;
+  final bool isBomb;
 
   GameItem({
     required this.id,
@@ -13,6 +14,7 @@ class GameItem {
     this.isNew = true,
     this.isMatched = false,
     this.isTarget = false,
+    this.isBomb = false,
   });
 
   GameItem copyWith({
@@ -21,6 +23,7 @@ class GameItem {
     bool? isNew,
     bool? isMatched,
     bool? isTarget,
+    bool? isBomb,
   }) {
     return GameItem(
       id: id ?? this.id,
@@ -28,6 +31,7 @@ class GameItem {
       isNew: isNew ?? this.isNew,
       isMatched: isMatched ?? this.isMatched,
       isTarget: isTarget ?? this.isTarget,
+      isBomb: isBomb ?? this.isBomb,
     );
   }
 }

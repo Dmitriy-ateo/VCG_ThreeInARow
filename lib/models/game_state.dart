@@ -88,6 +88,10 @@ class GameState extends ChangeNotifier {
 
   // Load the correct campaign level parameters (shape and size)
   void loadCampaignLevel() {
+    if (level == 5) {
+      startNewGame(BoardShapeType.hexagon, 3);
+      return;
+    }
     final shapes = BoardShapeType.values.where((s) => s != BoardShapeType.letter).toList();
     final shape = shapes[(level - 1) % shapes.length];
     int size = 3;
@@ -191,6 +195,11 @@ class GameState extends ChangeNotifier {
     if (index < 0 || index >= upcomingQueue.length) return;
     if (index == 0) return; // Already the active next item
 
+    // Level 5 Tutorial: Swaps disabled entirely
+    if (level == 5) {
+      return;
+    }
+
     // Level 1 Tutorial Swap Restrictions
     if (level == 1) {
       if (tutorialStep == 2) {
@@ -223,9 +232,14 @@ class GameState extends ChangeNotifier {
   // STANDARD GAME INITIALIZATION
   void startNewGame(BoardShapeType shapeType, int size) {
     isDailyEvent = false;
-    _currentShapeType = shapeType;
-    _currentSize = size;
-    currentBoardShape = BoardShape.generate(shapeType, size: size);
+    if (level == 5) {
+      _currentShapeType = BoardShapeType.hexagon;
+      _currentSize = 3;
+    } else {
+      _currentShapeType = shapeType;
+      _currentSize = size;
+    }
+    currentBoardShape = BoardShape.generate(_currentShapeType, size: _currentSize);
     
     grid.clear();
     isGameOver = false;
@@ -264,6 +278,55 @@ class GameState extends ChangeNotifier {
       grid[const HexCoord(-1, 0)] = GameItem(
         id: _generateUniqueId(),
         color: colors[2], // Green
+        isNew: false,
+        isTarget: false,
+      );
+    } else if (level == 5) {
+      tutorialStep = 1;
+      targetsLeft = 1;
+
+      // 1. Spawn fixed target item (Yellow star at (1, 0))
+      grid[const HexCoord(1, 0)] = GameItem(
+        id: _generateUniqueId(),
+        color: colors[3], // Yellow (colors[3])
+        isNew: false,
+        isTarget: true,
+      );
+
+      // 2. Initialize upcoming queue (Red, Blue, Green)
+      upcomingQueue = [colors[0], colors[1], colors[2]];
+
+      // 3. Spawn fixed standard items
+      // Red spheres pre-placed at (0, -1), (0, 1), and (0, 2).
+      grid[const HexCoord(0, -1)] = GameItem(
+        id: _generateUniqueId(),
+        color: colors[0], // Red
+        isNew: false,
+        isTarget: false,
+      );
+      grid[const HexCoord(0, 1)] = GameItem(
+        id: _generateUniqueId(),
+        color: colors[0], // Red
+        isNew: false,
+        isTarget: false,
+      );
+      grid[const HexCoord(0, 2)] = GameItem(
+        id: _generateUniqueId(),
+        color: colors[0], // Red
+        isNew: false,
+        isTarget: false,
+      );
+
+      // Blue spheres pre-placed at (-1, -1) and (-1, 1).
+      grid[const HexCoord(-1, -1)] = GameItem(
+        id: _generateUniqueId(),
+        color: colors[1], // Blue
+        isNew: false,
+        isTarget: false,
+      );
+      grid[const HexCoord(-1, 1)] = GameItem(
+        id: _generateUniqueId(),
+        color: colors[1], // Blue
         isNew: false,
         isTarget: false,
       );
@@ -386,6 +449,19 @@ class GameState extends ChangeNotifier {
       }
     }
 
+    // Level 5 Tutorial Placement Restrictions
+    if (level == 5) {
+      if (tutorialStep == 1) {
+        // Step 1: Must place at (0, 0)
+        if (coord.q != 0 || coord.r != 0) return;
+      } else if (tutorialStep == 2) {
+        // Step 2: Must place at (-1, 0)
+        if (coord.q != -1 || coord.r != 0) return;
+      } else {
+        return;
+      }
+    }
+
     Color nextColor = upcomingQueue.removeAt(0);
     upcomingQueue.add(_getRandomColor());
 
@@ -405,9 +481,12 @@ class GameState extends ChangeNotifier {
     Set<HexCoord> matches = checkMatches();
 
     if (matches.isNotEmpty) {
-      int pointsEarned = matches.length * 10;
-      if (matches.length > 3) {
-        pointsEarned += (matches.length - 3) * 15;
+      final bool spawnBombAtCoord = level >= 5 && matches.length >= 4 && matches.contains(coord);
+      final Set<HexCoord> resolvedClear = _resolveBombs(matches);
+
+      int pointsEarned = resolvedClear.length * 10;
+      if (resolvedClear.length > 3) {
+        pointsEarned += (resolvedClear.length - 3) * 15;
       }
       score += pointsEarned;
       if (score > highScore) {
@@ -417,10 +496,10 @@ class GameState extends ChangeNotifier {
         }
       }
 
-      int targetsCleared = matches.where((c) => grid[c]?.isTarget == true).length;
+      int targetsCleared = resolvedClear.where((c) => grid[c]?.isTarget == true).length;
       targetsLeft = max(0, targetsLeft - targetsCleared);
 
-      for (var c in matches) {
+      for (var c in resolvedClear) {
         if (grid.containsKey(c)) {
           grid[c] = grid[c]!.copyWith(isMatched: true);
         }
@@ -429,8 +508,17 @@ class GameState extends ChangeNotifier {
 
       await Future.delayed(const Duration(milliseconds: 300));
 
-      for (var c in matches) {
+      for (var c in resolvedClear) {
         grid.remove(c);
+      }
+
+      if (spawnBombAtCoord) {
+        grid[coord] = GameItem(
+          id: _generateUniqueId(),
+          color: Colors.grey,
+          isBomb: true,
+          isNew: true,
+        );
       }
       
       _clearNewFlags();
@@ -443,6 +531,12 @@ class GameState extends ChangeNotifier {
         } else if (tutorialStep == 3) {
           tutorialStep = 0;
         }
+      } else if (level == 5) {
+        if (tutorialStep == 1) {
+          tutorialStep = 2;
+        } else if (tutorialStep == 2) {
+          tutorialStep = 0;
+        }
       }
       
       _checkLevelOrGameOver();
@@ -450,8 +544,8 @@ class GameState extends ChangeNotifier {
     } else {
       _clearNewFlags();
       
-      // In tutorial level, we do not spawn random items
-      if (level == 1) {
+      // In tutorial levels, we do not spawn random items
+      if (level == 1 || level == 5) {
         isAnimating = false;
         _checkLevelOrGameOver();
         notifyListeners();
@@ -466,7 +560,9 @@ class GameState extends ChangeNotifier {
         
         Set<HexCoord> randomMatches = checkMatches();
         if (randomMatches.isNotEmpty) {
-          int pointsEarned = randomMatches.length * 10;
+          final Set<HexCoord> resolvedRandomClear = _resolveBombs(randomMatches);
+
+          int pointsEarned = resolvedRandomClear.length * 10;
           score += pointsEarned;
           if (score > highScore) {
             highScore = score;
@@ -475,10 +571,10 @@ class GameState extends ChangeNotifier {
             }
           }
 
-          int targetsCleared = randomMatches.where((c) => grid[c]?.isTarget == true).length;
+          int targetsCleared = resolvedRandomClear.where((c) => grid[c]?.isTarget == true).length;
           targetsLeft = max(0, targetsLeft - targetsCleared);
 
-          for (var c in randomMatches) {
+          for (var c in resolvedRandomClear) {
             if (grid.containsKey(c)) {
               grid[c] = grid[c]!.copyWith(isMatched: true);
             }
@@ -487,7 +583,7 @@ class GameState extends ChangeNotifier {
 
           await Future.delayed(const Duration(milliseconds: 300));
 
-          for (var c in randomMatches) {
+          for (var c in resolvedRandomClear) {
             grid.remove(c);
           }
         }
@@ -601,6 +697,52 @@ class GameState extends ChangeNotifier {
     return copy;
   }
 
+  Set<HexCoord> _resolveBombs(Set<HexCoord> matchedCoords) {
+    if (level < 5) return matchedCoords;
+
+    Set<HexCoord> toClear = Set.from(matchedCoords);
+    bool expanded = true;
+    Set<HexCoord> explodedBombs = {};
+
+    while (expanded) {
+      expanded = false;
+      
+      List<MapEntry<HexCoord, GameItem>> activeBombs = grid.entries
+          .where((entry) => entry.value.isBomb && !explodedBombs.contains(entry.key))
+          .toList();
+
+      for (var entry in activeBombs) {
+        HexCoord bombCoord = entry.key;
+        bool isTriggered = toClear.contains(bombCoord);
+        if (!isTriggered) {
+          for (var dir in HexCoord.directions) {
+            HexCoord neighbor = bombCoord + dir;
+            if (toClear.contains(neighbor)) {
+              isTriggered = true;
+              break;
+            }
+          }
+        }
+
+        if (isTriggered) {
+          explodedBombs.add(bombCoord);
+          toClear.add(bombCoord);
+          
+          for (var dir in HexCoord.directions) {
+            HexCoord neighbor = bombCoord + dir;
+            if (currentBoardShape.cells.contains(neighbor)) {
+              toClear.add(neighbor);
+            }
+          }
+          expanded = true;
+          break;
+        }
+      }
+    }
+
+    return toClear;
+  }
+
   // Scans the board for any 3-in-a-row connections
   Set<HexCoord> checkMatches() {
     Set<HexCoord> matchedCoords = {};
@@ -608,11 +750,12 @@ class GameState extends ChangeNotifier {
     for (var entry in grid.entries) {
       HexCoord start = entry.key;
       GameItem item = entry.value;
-      if (item.isMatched) continue;
+      if (item.isMatched || item.isBomb) continue;
 
       for (var dir in HexCoord.lineDirections) {
         HexCoord prev = start - dir;
         if (grid.containsKey(prev) &&
+            !grid[prev]!.isBomb &&
             grid[prev]!.color == item.color &&
             !grid[prev]!.isMatched) {
           continue;
@@ -622,6 +765,7 @@ class GameState extends ChangeNotifier {
         HexCoord next = start + dir;
         
         while (grid.containsKey(next) &&
+            !grid[next]!.isBomb &&
             grid[next]!.color == item.color &&
             !grid[next]!.isMatched) {
           currentLine.add(next);

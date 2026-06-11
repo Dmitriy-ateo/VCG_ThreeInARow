@@ -207,10 +207,15 @@ class _GameScreenState extends State<GameScreen> {
 
   Widget _buildTutorialCard() {
     final int step = _gameState.tutorialStep;
-    if (step == 0 || _gameState.level != 1) return const SizedBox.shrink();
+    final int level = _gameState.level;
+    if (step == 0 || (level != 1 && level != 5)) return const SizedBox.shrink();
 
-    final String titleKey = 'tutorial_step${step}_title';
-    final String msgKey = 'tutorial_step${step}_msg';
+    final String titleKey = level == 5 
+        ? 'tutorial_l5_step${step}_title' 
+        : 'tutorial_step${step}_title';
+    final String msgKey = level == 5 
+        ? 'tutorial_l5_step${step}_msg' 
+        : 'tutorial_step${step}_msg';
     
     final String lang = _gameState.currentLanguage;
     final String title = AppLocalizations.translate(titleKey, lang);

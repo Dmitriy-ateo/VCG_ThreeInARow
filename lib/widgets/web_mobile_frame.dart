@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
 class WebMobileFrame extends StatelessWidget {
   final Widget child;
 
@@ -9,7 +11,12 @@ class WebMobileFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Only apply the mobile frame on web/desktop viewports
+    // Leave the frame only for the web version; otherwise, render vertical mobile layout.
+    if (!kIsWeb) {
+      return child;
+    }
+
+    // Only apply the mobile frame on web viewports
     return LayoutBuilder(
       builder: (context, constraints) {
         final double screenWidth = constraints.maxWidth;

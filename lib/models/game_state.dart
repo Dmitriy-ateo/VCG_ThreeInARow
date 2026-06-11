@@ -194,8 +194,8 @@ class GameState extends ChangeNotifier {
     // Level 1 Tutorial Swap Restrictions
     if (level == 1) {
       if (tutorialStep == 2) {
-        // Must swap index 2 (Green)
-        if (index != 2) return;
+        // Must swap index 1 (Green)
+        if (index != 1) return;
         tutorialStep = 3;
       } else {
         // Swaps disabled in steps 1 and 3

@@ -806,7 +806,7 @@ class _GameScreenState extends State<GameScreen> {
                   QueueWidget(
                     colors: _gameState.upcomingQueue,
                     onTapItem: _gameState.swapQueueItem,
-                    highlightIndex: _gameState.level == 1 && _gameState.tutorialStep == 2 ? 2 : null,
+                    highlightIndex: _gameState.level == 1 && _gameState.tutorialStep == 2 ? 1 : null,
                     languageCode: _gameState.currentLanguage,
                   ),
                   const SizedBox(height: 12),

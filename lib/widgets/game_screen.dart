@@ -874,175 +874,254 @@ class _GameScreenState extends State<GameScreen> {
 
   // HEADER
   Widget _buildHeader() {
-    final lang = _gameState.currentLanguage;
-    final title = _gameState.isDailyEvent 
-        ? AppLocalizations.translate('card_daily_event', lang) 
-        : AppLocalizations.translate('card_play_campaign', lang, args: {'level': '${_gameState.level}'});
-    final subtitle = _gameState.isDailyEvent 
-        ? AppLocalizations.translate('hud_daily_sub', lang) 
-        : AppLocalizations.translate('hud_campaign_sub', lang);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double width = constraints.maxWidth;
+        final bool isCompact = width < 480;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        // Left side: Back button + Title Column (Title, Badge, Subtitle)
-        Row(
-          children: [
-            IconButton(
-              onPressed: () {
-                setState(() {
-                  _flowState = AppFlowState.menu;
-                });
-              },
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.04),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-                ),
-                child: const Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  color: Colors.white,
-                  size: 14,
-                ),
-              ),
-              constraints: const BoxConstraints(),
-              padding: const EdgeInsets.only(left: 6, right: 16),
+        final lang = _gameState.currentLanguage;
+        final title = _gameState.isDailyEvent 
+            ? AppLocalizations.translate('card_daily_event', lang) 
+            : AppLocalizations.translate('card_play_campaign', lang, args: {'level': '${_gameState.level}'});
+        final subtitle = _gameState.isDailyEvent 
+            ? AppLocalizations.translate('hud_daily_sub', lang) 
+            : AppLocalizations.translate('hud_campaign_sub', lang);
+
+        final Widget backButton = IconButton(
+          onPressed: () {
+            setState(() {
+              _flowState = AppFlowState.menu;
+            });
+          },
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.04),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 2,
-                        shadows: [
-                          Shadow(
-                            color: Colors.cyan.withValues(alpha: 0.8),
-                            blurRadius: 10,
-                          ),
-                        ],
-                      ),
+            child: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: Colors.white,
+              size: 14,
+            ),
+          ),
+          constraints: const BoxConstraints(),
+          padding: const EdgeInsets.only(left: 6, right: 12),
+        );
+
+        final Widget titleAndBadge = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                title,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2,
+                  shadows: [
+                    Shadow(
+                      color: Colors.cyan.withValues(alpha: 0.8),
+                      blurRadius: 10,
                     ),
-                    const SizedBox(width: 8),
-                    _buildDifficultyBadge(_gameState.difficulty),
                   ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.4),
-                    fontSize: 11,
-                    letterSpacing: 0.5,
-                  ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            _buildDifficultyBadge(_gameState.difficulty),
+          ],
+        );
+
+        final Widget settingsButton = IconButton(
+          onPressed: _showSettingsModal,
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.04),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white.withOpacity(0.08)),
+            ),
+            child: const Icon(
+              Icons.settings_rounded,
+              color: Colors.white,
+              size: 14,
+            ),
+          ),
+          constraints: const BoxConstraints(),
+          padding: EdgeInsets.zero,
+        );
+
+        final Widget scoreCapsule = Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.03),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.emoji_events_rounded,
+                color: Colors.cyanAccent,
+                size: 14,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '${_gameState.score}',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  shadows: [
+                    Shadow(
+                      color: Colors.cyanAccent.withValues(alpha: 0.5),
+                      blurRadius: 4,
+                    ),
+                  ],
                 ),
+              ),
+            ],
+          ),
+        );
+
+        final Widget targetsCapsule = Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.03),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.star_rounded,
+                color: Colors.amberAccent,
+                size: 14,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '${_gameState.targetsLeft}',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  shadows: [
+                    Shadow(
+                      color: Colors.amberAccent.withValues(alpha: 0.5),
+                      blurRadius: 4,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+
+        if (isCompact) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Row 1: Back + Title/Badge + Settings
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        backButton,
+                        Expanded(child: titleAndBadge),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  settingsButton,
+                ],
+              ),
+              const SizedBox(height: 6),
+              // Row 2: Subtitle + Score/Targets
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.4),
+                        fontSize: 11,
+                        letterSpacing: 0.5,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      scoreCapsule,
+                      const SizedBox(width: 8),
+                      targetsCapsule,
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          );
+        }
+
+        // Standard Layout
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Row(
+                children: [
+                  backButton,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        titleAndBadge,
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.4),
+                            fontSize: 11,
+                            letterSpacing: 0.5,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                scoreCapsule,
+                const SizedBox(width: 8),
+                targetsCapsule,
+                const SizedBox(width: 8),
+                settingsButton,
               ],
             ),
           ],
-        ),
-        // Right side: Score & Targets Left capsules + Settings gear
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Score Capsule
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.03),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.emoji_events_rounded,
-                    color: Colors.cyanAccent,
-                    size: 14,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${_gameState.score}',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      shadows: [
-                        Shadow(
-                          color: Colors.cyanAccent.withValues(alpha: 0.5),
-                          blurRadius: 4,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Targets Capsule
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.03),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.star_rounded,
-                    color: Colors.amberAccent,
-                    size: 14,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${_gameState.targetsLeft}',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      shadows: [
-                        Shadow(
-                          color: Colors.amberAccent.withValues(alpha: 0.5),
-                          blurRadius: 4,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Settings Gear button
-            IconButton(
-              onPressed: _showSettingsModal,
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.04),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white.withOpacity(0.08)),
-                ),
-                child: const Icon(
-                  Icons.settings_rounded,
-                  color: Colors.white,
-                  size: 14,
-                ),
-              ),
-              constraints: const BoxConstraints(),
-              padding: EdgeInsets.zero,
-            ),
-          ],
-        ),
-      ],
+        );
+      },
     );
   }
 

@@ -882,7 +882,7 @@ class _GameScreenState extends State<GameScreen> {
         final lang = _gameState.currentLanguage;
         final title = _gameState.isDailyEvent 
             ? AppLocalizations.translate('card_daily_event', lang) 
-            : AppLocalizations.translate('card_play_campaign', lang, args: {'level': '${_gameState.level}'});
+            : AppLocalizations.translate('hud_level_title', lang, args: {'level': '${_gameState.level}'});
         final subtitle = _gameState.isDailyEvent 
             ? AppLocalizations.translate('hud_daily_sub', lang) 
             : AppLocalizations.translate('hud_campaign_sub', lang);

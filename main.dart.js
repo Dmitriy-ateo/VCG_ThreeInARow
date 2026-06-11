@@ -35413,7 +35413,7 @@ if(q.z||q.ax||q.Q)return
 s=q.w.length
 if(a>=s)return
 if(a===0)return
-if(q.as===1)if(q.CW===2){if(a!==2)return
+if(q.as===1)if(q.CW===2){if(a!==1)return
 q.CW=3}else return
 s=q.w
 r=s[0]
@@ -35819,7 +35819,7 @@ p=i.Qm()
 o=i.d
 n=A.ie(A.i6(A.bj(j,new A.BH(o,j),B.n,j,B.x5,j,j,j,j,j,j,j,j),j,j))
 m=o.w
-l=o.as===1&&o.CW===2?2:j
+l=o.as===1&&o.CW===2?1:j
 k=t.D
 k=A.c([s,r,A.uZ(!0,new A.dz(B.AL,A.db(A.c([q,B.bW,p,n,B.K7,new A.Df(m,o.gPh(),l,o.ch,j),B.bW],k),B.x,B.z,B.H),j),!0)],k)
 if(o.z)k.push(i.Q8())

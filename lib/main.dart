@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'widgets/game_screen.dart';
+import 'widgets/web_mobile_frame.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,7 +19,7 @@ class MyApp extends StatelessWidget {
         brightness: Brightness.dark,
         useMaterial3: true,
       ),
-      home: const GameScreen(),
+      home: const WebMobileFrame(child: GameScreen()),
     );
   }
 }

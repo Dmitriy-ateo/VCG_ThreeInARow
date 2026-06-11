@@ -23,7 +23,8 @@ DS3/
 │       ├── hex_board_widget.dart# Responsive bounds calculation & positioning
 │       ├── hex_cell_widget.dart # CustomPainter cell drawing (neon bloom)
 │       ├── hex_item_widget.dart # CustomPainter ball drawing (glassy neon 3D)
-│       └── queue_widget.dart    # Upcoming items preview
+│       ├── queue_widget.dart    # Upcoming items preview
+│       └── web_mobile_frame.dart# Centered responsive mobile chassis wrapper for web
 ```
 
 ---
@@ -92,3 +93,6 @@ DS3/
 
 #### [queue_widget.dart](file:///Users/dmitrijkabakov/Work/ThirdParty/FlutterApp/VibeGaming/DS3/lib/widgets/queue_widget.dart)
 - **`QueueWidget`**: Displays upcoming colors in a frosted-glass panel. Supports interactive tapping of the second or third balls to swap them to the front (with scale animation tap feedback).
+
+#### [web_mobile_frame.dart](file:///Users/dmitrijkabakov/Work/ThirdParty/FlutterApp/VibeGaming/DS3/lib/widgets/web_mobile_frame.dart)
+- **`WebMobileFrame`**: Evaluates browser screen width. If the viewport is larger than `600` logical pixels, it wraps the viewport inside a floating mobile device mockup with glowing ambient backdrops, rounded corners, simulated status/home bars, a custom Dynamic Island, and floating desktop controls guide sidebars. Otherwise, runs standard full-bleed responsive layout.

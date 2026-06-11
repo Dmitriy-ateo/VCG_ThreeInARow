@@ -8,6 +8,9 @@ The project is built as a modular Flutter application using standard MVVM archit
 
 ```
 DS3/
+├── .github/
+│   └── workflows/
+│       └── deploy.yml        # GitHub Actions workflow for automatic Pages deploy
 ├── lib/
 │   ├── main.dart             # Application Entry Point
 │   ├── models/

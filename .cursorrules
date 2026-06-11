@@ -1,0 +1,17 @@
+# AI Codebase Rules - Hexa Match
+
+As an AI assistant working on this codebase, you must follow these rules strictly to conserve token usage, implement high-performance rendering, and maintain codebase health:
+
+## 1. MANDATORY: Read the Source Map & Best Practices First
+- Before reading *any* code files in `lib/`, you **MUST** read [source_map.md](file:///Users/dmitrijkabakov/Work/ThirdParty/FlutterApp/VibeGaming/DS3/source_map.md) and [best_practices.md](file:///Users/dmitrijkabakov/Work/ThirdParty/FlutterApp/VibeGaming/DS3/best_practices.md) first.
+- Use the map to understand the architecture, and follow the optimization guidelines for rendering, widget rebuilds, and state.
+- Do **NOT** open or read entire files unless you are planning to modify them. Rely on these reference guides for structural and logic context.
+
+## 2. Maintain Reference Files
+- If you add a new file, change a file path, delete a file, or modify any major API/class relationship, you **MUST** update [source_map.md](file:///Users/dmitrijkabakov/Work/ThirdParty/FlutterApp/VibeGaming/DS3/source_map.md) immediately.
+- If you identify new optimization patterns or introduce new core systems, update [best_practices.md](file:///Users/dmitrijkabakov/Work/ThirdParty/FlutterApp/VibeGaming/DS3/best_practices.md).
+
+## 3. High Performance Optimization Mandate
+- **Repaint Boundaries**: Wrap animations and static canvas components in `RepaintBoundary` to isolate paint overhead.
+- **Widget Rebuild Control**: Decouple state scopes and use `const` widgets where possible to bypass build cycles.
+- **Zero Analyzer Warnings**: Static analysis must have zero warnings/errors. Run `flutter analyze` after every code change.

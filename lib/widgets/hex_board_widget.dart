@@ -115,9 +115,18 @@ class HexBoardWidget extends StatelessWidget {
                           final double dx = localPos.dx - centerX;
                           final double dy = localPos.dy - centerY;
                           
-                          if (dx > 0 && dy > 0 && gameState.level != 1 && gameState.level != 5) {
-                            final neighbor = cell + const HexCoord(0, 1);
-                            if (gameState.currentBoardShape.cells.contains(neighbor) &&
+                          if (dy > 0 && gameState.level != 1 && gameState.level != 5) {
+                            HexCoord? neighbor;
+                            if (dx > 0) {
+                              // Bottom-right quadrant -> bottom-right neighbor
+                              neighbor = cell + const HexCoord(0, 1);
+                            } else if (dx < 0) {
+                              // Bottom-left quadrant -> bottom-left neighbor
+                              neighbor = cell + const HexCoord(-1, 1);
+                            }
+                            
+                            if (neighbor != null &&
+                                gameState.currentBoardShape.cells.contains(neighbor) &&
                                 !gameState.grid.containsKey(neighbor)) {
                               gameState.placeItem(neighbor);
                               return;

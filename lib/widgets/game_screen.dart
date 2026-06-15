@@ -3,6 +3,7 @@ import '../models/game_state.dart';
 import '../models/localization.dart';
 import 'hex_board_widget.dart';
 import 'queue_widget.dart';
+import 'bomb_inventory_button.dart';
 
 enum AppFlowState {
   landing,
@@ -210,12 +211,17 @@ class _GameScreenState extends State<GameScreen> {
     final int level = _gameState.level;
     if (step == 0 || (level != 1 && level != 5)) return const SizedBox.shrink();
 
-    final String titleKey = level == 5 
+    String titleKey = level == 5 
         ? 'tutorial_l5_step${step}_title' 
         : 'tutorial_step${step}_title';
-    final String msgKey = level == 5 
+    String msgKey = level == 5 
         ? 'tutorial_l5_step${step}_msg' 
         : 'tutorial_step${step}_msg';
+
+    if (level == 5 && step == 2 && _gameState.isBombModeActive) {
+      titleKey = 'tutorial_l5_step2_active_title';
+      msgKey = 'tutorial_l5_step2_active_msg';
+    }
     
     final String lang = _gameState.currentLanguage;
     final String title = AppLocalizations.translate(titleKey, lang);
@@ -806,13 +812,28 @@ class _GameScreenState extends State<GameScreen> {
                     ),
                   ),
 
-                  // Upcoming Items queue
+                  // Upcoming Items queue and Bomb Inventory
                   const SizedBox(height: 10),
-                  QueueWidget(
-                    colors: _gameState.upcomingQueue,
-                    onTapItem: _gameState.swapQueueItem,
-                    highlightIndex: _gameState.level == 1 && _gameState.tutorialStep == 2 ? 1 : null,
-                    languageCode: _gameState.currentLanguage,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      QueueWidget(
+                        colors: _gameState.upcomingQueue,
+                        onTapItem: _gameState.swapQueueItem,
+                        highlightIndex: _gameState.level == 1 && _gameState.tutorialStep == 2 ? 1 : null,
+                        languageCode: _gameState.currentLanguage,
+                      ),
+                      if (_gameState.level >= 5 && !_gameState.isDailyEvent) ...[
+                        const SizedBox(width: 12),
+                        BombInventoryButton(
+                          count: _gameState.bombInventoryCount,
+                          isActive: _gameState.isBombModeActive,
+                          pulseGold: _gameState.level == 5 && _gameState.tutorialStep == 2 && !_gameState.isBombModeActive,
+                          languageCode: _gameState.currentLanguage,
+                          onTap: _gameState.toggleBombMode,
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 12),
                 ],

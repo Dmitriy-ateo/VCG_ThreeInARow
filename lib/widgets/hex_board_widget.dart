@@ -98,7 +98,7 @@ class HexBoardWidget extends StatelessWidget {
                       if (gameState.tutorialStep == 1) {
                         isHighlighted = cell.q == 0 && cell.r == 0;
                       } else if (gameState.tutorialStep == 2) {
-                        isHighlighted = cell.q == -1 && cell.r == 0;
+                        isHighlighted = gameState.isBombModeActive && cell.q == 0 && cell.r == 0;
                       }
                     }
 

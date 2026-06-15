@@ -35,6 +35,18 @@ class GameState extends ChangeNotifier {
   String _currentLanguage = 'en';
   int tutorialStep = 0;
 
+  // Bomb Inventory state
+  int bombInventoryCount = 0;
+  bool isBombModeActive = false;
+
+  void toggleBombMode() {
+    if (level < 5) return;
+    if (bombInventoryCount > 0) {
+      isBombModeActive = !isBombModeActive;
+      notifyListeners();
+    }
+  }
+
   String get currentLanguage => _currentLanguage;
 
   void setLanguage(String langCode) {
@@ -246,6 +258,8 @@ class GameState extends ChangeNotifier {
     isLevelCompleted = false;
     isAnimating = false;
     score = 0;
+    bombInventoryCount = 0;
+    isBombModeActive = false;
     
     if (level == 1) {
       tutorialStep = 1;
@@ -361,6 +375,8 @@ class GameState extends ChangeNotifier {
     isLevelCompleted = false;
     isAnimating = false;
     score = 0;
+    bombInventoryCount = 0;
+    isBombModeActive = false;
 
     // Generate date seed: YYYYMMDD
     final now = DateTime.now();
@@ -431,7 +447,12 @@ class GameState extends ChangeNotifier {
 
   // Tries to place the next item from the queue onto the selected cell
   Future<void> placeItem(HexCoord coord) async {
-    if (isGameOver || isLevelCompleted || isAnimating || grid.containsKey(coord)) {
+    if (isGameOver || isLevelCompleted || isAnimating) {
+      return;
+    }
+    
+    // Tapping occupied cells is only allowed in Bomb Mode
+    if (!isBombModeActive && grid.containsKey(coord)) {
       return;
     }
 
@@ -455,13 +476,85 @@ class GameState extends ChangeNotifier {
         // Step 1: Must place at (0, 0)
         if (coord.q != 0 || coord.r != 0) return;
       } else if (tutorialStep == 2) {
-        // Step 2: Must place at (-1, 0)
-        if (coord.q != -1 || coord.r != 0) return;
+        // Step 2: Must place the bomb at (0, 0)
+        if (!isBombModeActive) return;
+        if (coord.q != 0 || coord.r != 0) return;
       } else {
         return;
       }
     }
 
+    // DETONATE BOMB MODE
+    if (isBombModeActive) {
+      isAnimating = true;
+      isBombModeActive = false;
+      bombInventoryCount = max(0, bombInventoryCount - 1);
+      notifyListeners();
+
+      // Gather coordinates to clear: coord itself + its 6 neighbors
+      Set<HexCoord> toClear = {coord};
+      for (var dir in HexCoord.directions) {
+        HexCoord neighbor = coord + dir;
+        if (currentBoardShape.cells.contains(neighbor)) {
+          toClear.add(neighbor);
+        }
+      }
+
+      // Chain reactions
+      final Set<HexCoord> resolvedClear = _resolveBombs(toClear);
+
+      // Temporary bomb GameItem at coord to play the detonation animation
+      grid[coord] = GameItem(
+        id: _generateUniqueId(),
+        color: Colors.grey,
+        isBomb: true,
+        isMatched: true,
+        isNew: true,
+      );
+
+      int pointsEarned = resolvedClear.length * 10;
+      if (resolvedClear.length > 3) {
+        pointsEarned += (resolvedClear.length - 3) * 15;
+      }
+      score += pointsEarned;
+      if (score > highScore) {
+        highScore = score;
+        if (_prefs != null) {
+          _prefs!.setInt('high_score', highScore);
+        }
+      }
+
+      int targetsCleared = resolvedClear.where((c) => grid[c]?.isTarget == true).length;
+      targetsLeft = max(0, targetsLeft - targetsCleared);
+
+      for (var c in resolvedClear) {
+        if (c != coord && grid.containsKey(c)) {
+          grid[c] = grid[c]!.copyWith(isMatched: true);
+        }
+      }
+      notifyListeners();
+
+      await Future.delayed(const Duration(milliseconds: 380));
+
+      for (var c in resolvedClear) {
+        grid.remove(c);
+      }
+      grid.remove(coord);
+
+      _clearNewFlags();
+      isAnimating = false;
+
+      // Level 5 Tutorial Step Progression
+      if (level == 5 && tutorialStep == 2) {
+        tutorialStep = 0;
+      }
+
+      _checkLevelOrGameOver();
+      notifyListeners();
+      return;
+    }
+
+    // STANDARD PLACEMENT MODE
     Color nextColor = upcomingQueue.removeAt(0);
     upcomingQueue.add(_getRandomColor());
 
@@ -481,7 +574,7 @@ class GameState extends ChangeNotifier {
     Set<HexCoord> matches = checkMatches();
 
     if (matches.isNotEmpty) {
-      final bool spawnBombAtCoord = level >= 5 && matches.length >= 4 && matches.contains(coord);
+      final bool addBombToInventory = level >= 5 && matches.length >= 4;
       final Set<HexCoord> resolvedClear = _resolveBombs(matches);
 
       int pointsEarned = resolvedClear.length * 10;
@@ -512,13 +605,8 @@ class GameState extends ChangeNotifier {
         grid.remove(c);
       }
 
-      if (spawnBombAtCoord) {
-        grid[coord] = GameItem(
-          id: _generateUniqueId(),
-          color: Colors.grey,
-          isBomb: true,
-          isNew: true,
-        );
+      if (addBombToInventory) {
+        bombInventoryCount++;
       }
       
       _clearNewFlags();
@@ -534,8 +622,6 @@ class GameState extends ChangeNotifier {
       } else if (level == 5) {
         if (tutorialStep == 1) {
           tutorialStep = 2;
-        } else if (tutorialStep == 2) {
-          tutorialStep = 0;
         }
       }
       
@@ -585,6 +671,10 @@ class GameState extends ChangeNotifier {
 
           for (var c in resolvedRandomClear) {
             grid.remove(c);
+          }
+
+          if (level >= 5 && randomMatches.length >= 4) {
+            bombInventoryCount++;
           }
         }
       }

@@ -171,6 +171,8 @@ class HexBoardWidget extends StatelessWidget {
                       child: HexItemWidget(
                         item: item,
                         size: R,
+                        gameState: gameState,
+                        cell: cell,
                       ),
                     ),
                   );

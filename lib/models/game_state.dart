@@ -534,7 +534,7 @@ class GameState extends ChangeNotifier {
       }
       notifyListeners();
 
-      await Future.delayed(const Duration(milliseconds: 380));
+      await Future.delayed(const Duration(milliseconds: 550));
 
       for (var c in resolvedClear) {
         grid.remove(c);

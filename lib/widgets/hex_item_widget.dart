@@ -1,6 +1,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/game_item.dart';
+import '../models/game_state.dart';
+import '../models/hex_coord.dart';
 
 class GlassBallPainter extends CustomPainter {
   final Color color;
@@ -52,7 +54,7 @@ class GlassBallPainter extends CustomPainter {
       ).createShader(Rect.fromCircle(center: center, radius: radius * 1.35));
     canvas.drawCircle(center, radius * 1.35, glowPaint);
 
-    // 2. Draw sphere black drop shadow (for depth)
+    // 2. Draw sphere shadow (for depth)
     final shadowPaint = Paint()
       ..shader = RadialGradient(
         colors: [
@@ -68,8 +70,8 @@ class GlassBallPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, radius - 2, basePaint);
 
-    // 4. Draw inner glowing core (radial gradient from center)
-    // Bombs have a glowing red core
+    // 4. Draw inner glowing core
+    // Bombs have a glowing red/white core
     final corePaint = Paint()
       ..shader = RadialGradient(
         colors: isBomb
@@ -94,7 +96,7 @@ class GlassBallPainter extends CustomPainter {
       ..strokeWidth = 3.5;
     canvas.drawCircle(center, radius - 2, rimPaint);
 
-    // 6. Draw glossy specular highlight reflection (light source at top-left)
+    // 6. Draw specular highlight reflection
     final highlightPaint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.topLeft,
@@ -105,19 +107,18 @@ class GlassBallPainter extends CustomPainter {
         ],
       ).createShader(Rect.fromLTWH(w * 0.15, h * 0.15, w * 0.35, h * 0.35));
     
-    // Specular highlight shape (oval)
     canvas.drawOval(
       Rect.fromLTWH(w * 0.18, h * 0.18, w * 0.3, h * 0.3),
       highlightPaint,
     );
 
-    // 7. Draw star core if it's a target item (scaled up for visibility)
+    // 7. Draw star core if it's a target item
     if (isTarget) {
       _drawStar(canvas, center, radius * 0.55);
     }
 
-    // Draw spark on top of everything
-    if (isBomb && !isExploding) {
+    // Draw fuse spark (if not exploded yet)
+    if (isBomb && (!isExploding || explosionProgress == 0.0)) {
       final sparkCenter = Offset(center.dx - radius * 0.45, center.dy - radius * 1.25);
       
       // Glow behind spark
@@ -146,7 +147,7 @@ class GlassBallPainter extends CustomPainter {
       }
     }
 
-    if (isExploding) {
+    if (isExploding && explosionProgress > 0.0) {
       // Draw expanding fiery shockwave ring
       final double waveRadius = radius * 3.0 * explosionProgress;
       final double opacity = (1.0 - explosionProgress).clamp(0.0, 1.0);
@@ -178,6 +179,30 @@ class GlassBallPainter extends CustomPainter {
           stops: const [0.0, 0.3, 0.7, 1.0],
         ).createShader(Rect.fromCircle(center: center, radius: waveRadius));
       canvas.drawCircle(center, waveRadius, coreFirePaint);
+
+      // Draw flying fire particles
+      final double particleDistance = radius * 2.8 * explosionProgress;
+      final paintParticle = Paint()
+        ..style = PaintingStyle.fill;
+
+      for (int i = 0; i < 8; i++) {
+        final double angle = i * (2 * pi / 8) + (i * 0.5);
+        final double px = center.dx + cos(angle) * particleDistance;
+        final double py = center.dy + sin(angle) * particleDistance;
+        
+        final double pRadius = radius * 0.16 * (1.0 - explosionProgress);
+        if (pRadius > 0.5) {
+          paintParticle.shader = RadialGradient(
+            colors: [
+              Colors.white.withValues(alpha: opacity),
+              const Color(0xFFFFD700).withValues(alpha: opacity * 0.8),
+              const Color(0xFFFF4500).withValues(alpha: 0.0),
+            ],
+          ).createShader(Rect.fromCircle(center: Offset(px, py), radius: pRadius));
+          
+          canvas.drawCircle(Offset(px, py), pRadius, paintParticle);
+        }
+      }
     }
   }
 
@@ -226,18 +251,22 @@ class GlassBallPainter extends CustomPainter {
 class HexItemWidget extends StatefulWidget {
   final GameItem item;
   final double size; // Radius of hex cell
+  final GameState gameState;
+  final HexCoord cell;
 
   const HexItemWidget({
     super.key,
     required this.item,
     required this.size,
+    required this.gameState,
+    required this.cell,
   });
 
   @override
   State<HexItemWidget> createState() => _HexItemWidgetState();
 }
 
-class _HexItemWidgetState extends State<HexItemWidget> with SingleTickerProviderStateMixin {
+class _HexItemWidgetState extends State<HexItemWidget> with TickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _opacityAnimation;
@@ -245,22 +274,37 @@ class _HexItemWidgetState extends State<HexItemWidget> with SingleTickerProvider
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 250),
-    );
+    
+    if (widget.item.isBomb && widget.item.isMatched) {
+      // Newly placed detonating bomb (550ms multi-stage explosion timeline)
+      _controller = AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 550),
+      );
+      
+      // Setup default fallback animations to satisfy Late initialization
+      _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(_controller);
+      _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(_controller);
+      
+      _controller.forward();
+    } else {
+      _controller = AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 250),
+      );
 
-    _scaleAnimation = Tween<double>(
-      begin: widget.item.isNew ? 0.0 : 1.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
+      _scaleAnimation = Tween<double>(
+        begin: widget.item.isNew ? 0.0 : 1.0,
+        end: 1.0,
+      ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
 
-    _opacityAnimation = Tween<double>(
-      begin: widget.item.isNew ? 0.0 : 1.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+      _opacityAnimation = Tween<double>(
+        begin: widget.item.isNew ? 0.0 : 1.0,
+        end: 1.0,
+      ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
-    _controller.forward();
+      _controller.forward();
+    }
   }
 
   @override
@@ -270,18 +314,22 @@ class _HexItemWidgetState extends State<HexItemWidget> with SingleTickerProvider
     // If the item status changes to matched, animate exit
     if (widget.item.isMatched && !oldWidget.item.isMatched) {
       if (widget.item.isBomb) {
-        _scaleAnimation = Tween<double>(
-          begin: _controller.value,
-          end: 2.2,
-        ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
-
-        _opacityAnimation = Tween<double>(
-          begin: _controller.value,
-          end: 0.0,
-        ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInCubic));
-
-        _controller.duration = const Duration(milliseconds: 380);
+        _controller.duration = const Duration(milliseconds: 550);
+        _controller.forward(from: 0.0);
       } else {
+        // Detonation propagation wave delay:
+        // Find if there is a detonating bomb in the grid to calculate distance delay
+        final bombEntry = widget.gameState.grid.entries.cast<MapEntry<HexCoord, GameItem>?>().firstWhere(
+          (e) => e != null && e.value.isBomb && e.value.isMatched,
+          orElse: () => null,
+        );
+
+        int delayMs = 0;
+        if (bombEntry != null) {
+          final int dist = widget.cell.distance(bombEntry.key);
+          delayMs = dist * 100; // 100ms propagation delay per cell ring
+        }
+
         _scaleAnimation = Tween<double>(
           begin: _controller.value,
           end: 0.0,
@@ -292,9 +340,18 @@ class _HexItemWidgetState extends State<HexItemWidget> with SingleTickerProvider
           end: 0.0,
         ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
 
-        _controller.duration = const Duration(milliseconds: 280);
+        _controller.duration = const Duration(milliseconds: 250);
+
+        if (delayMs > 0) {
+          Future.delayed(Duration(milliseconds: delayMs), () {
+            if (mounted) {
+              _controller.forward(from: 0.0);
+            }
+          });
+        } else {
+          _controller.forward(from: 0.0);
+        }
       }
-      _controller.forward(from: 0.0);
     }
   }
 
@@ -307,29 +364,72 @@ class _HexItemWidgetState extends State<HexItemWidget> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     final color = widget.item.color;
-    final ballSize = widget.size * 1.55; // Enlarged to fill cells better and enhance readability
+    final ballSize = widget.size * 1.55;
 
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
         final bool isExploding = widget.item.isBomb && widget.item.isMatched;
-        final double progress = isExploding ? _controller.value : 0.0;
+        final double t = _controller.value;
+        
+        double currentScale = 1.0;
+        double currentOpacity = 1.0;
+        double explosionProgress = 0.0;
+        double dx = 0.0;
+        double dy = 0.0;
+        Color bombColor = color;
 
-        return Transform.scale(
-          scale: _scaleAnimation.value,
-          child: Opacity(
-            opacity: _opacityAnimation.value,
-            child: SizedBox(
-              width: ballSize,
-              height: ballSize,
-              child: CustomPaint(
-                size: Size(ballSize, ballSize),
-                painter: GlassBallPainter(
-                  color: color,
-                  isTarget: widget.item.isTarget,
-                  isBomb: widget.item.isBomb,
-                  isExploding: isExploding,
-                  explosionProgress: progress,
+        if (isExploding) {
+          if (t < 0.20) {
+            // 1. Swell phase (0% - 20%): Bomb scales up from 1.0 to 1.4, heats up to red
+            final double localT = t / 0.20;
+            currentScale = 1.0 + 0.4 * localT;
+            currentOpacity = 1.0;
+            explosionProgress = 0.0;
+            bombColor = Color.lerp(Colors.grey, const Color(0xFFFF3333), localT)!;
+          } else if (t < 0.40) {
+            // 2. Shake & Superheat phase (20% - 40%): Bomb swells to 1.55, heats to white, vibrates
+            final double localT = (t - 0.20) / 0.20;
+            currentScale = 1.4 + 0.15 * localT;
+            currentOpacity = 1.0;
+            explosionProgress = 0.0;
+            bombColor = Color.lerp(const Color(0xFFFF3333), Colors.white, localT)!;
+            
+            // Pseudo-random high frequency shake translation
+            final random = Random((t * 1000).toInt());
+            dx = (random.nextDouble() - 0.5) * 8.0;
+            dy = (random.nextDouble() - 0.5) * 8.0;
+          } else {
+            // 3. Outward Blast & Dissolve phase (40% - 100%): Expand rapidly, fade, draw shockwave & debris
+            final double localT = (t - 0.40) / 0.60;
+            currentScale = 1.55 + 2.05 * localT; // expanding up to 3.6x
+            currentOpacity = 1.0 - localT;
+            explosionProgress = localT;
+            bombColor = Colors.white;
+          }
+        } else {
+          currentScale = _scaleAnimation.value;
+          currentOpacity = _opacityAnimation.value;
+        }
+
+        return Transform.translate(
+          offset: Offset(dx, dy),
+          child: Transform.scale(
+            scale: currentScale,
+            child: Opacity(
+              opacity: currentOpacity,
+              child: SizedBox(
+                width: ballSize,
+                height: ballSize,
+                child: CustomPaint(
+                  size: Size(ballSize, ballSize),
+                  painter: GlassBallPainter(
+                    color: bombColor,
+                    isTarget: widget.item.isTarget,
+                    isBomb: widget.item.isBomb,
+                    isExploding: isExploding,
+                    explosionProgress: explosionProgress,
+                  ),
                 ),
               ),
             ),

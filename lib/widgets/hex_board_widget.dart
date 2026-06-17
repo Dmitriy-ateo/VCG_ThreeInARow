@@ -63,8 +63,8 @@ class HexBoardWidget extends StatelessWidget {
         // Choose radius R to fit both dimensions nicely
         double R = min(scaleX, scaleY) * 0.90;
 
-        // Clamp to prevent layout breakage on extreme aspect ratios
-        R = R.clamp(18.0, 75.0);
+        // Clamp to prevent layout breakage on extreme aspect ratios and allow scaling down on compact viewports
+        R = R.clamp(10.0, 75.0);
 
         final double hexWidth = sqrt3 * R;
         final double hexHeight = 2.0 * R;

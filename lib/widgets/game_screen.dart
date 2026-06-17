@@ -822,11 +822,13 @@ class _GameScreenState extends State<GameScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      QueueWidget(
-                        colors: _gameState.upcomingQueue,
-                        onTapItem: _gameState.swapQueueItem,
-                        highlightIndex: _gameState.level == 1 && _gameState.tutorialStep == 2 ? 1 : null,
-                        languageCode: _gameState.currentLanguage,
+                      Flexible(
+                        child: QueueWidget(
+                          colors: _gameState.upcomingQueue,
+                          onTapItem: _gameState.swapQueueItem,
+                          highlightIndex: _gameState.level == 1 && _gameState.tutorialStep == 2 ? 1 : null,
+                          languageCode: _gameState.currentLanguage,
+                        ),
                       ),
                       if (_gameState.level >= 5 && !_gameState.isDailyEvent) ...[
                         const SizedBox(width: 12),

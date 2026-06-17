@@ -168,11 +168,12 @@ class QueueWidget extends StatelessWidget {
             showSwapTip 
                 ? AppLocalizations.translate('queue_tap_to_swap', languageCode)
                 : AppLocalizations.translate('queue_next_up', languageCode),
+            textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.5),
               fontSize: 10,
               fontWeight: FontWeight.bold,
-              letterSpacing: 2.5,
+              letterSpacing: 1.5,
             ),
           ),
           const SizedBox(height: 12),

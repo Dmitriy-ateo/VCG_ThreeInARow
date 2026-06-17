@@ -128,6 +128,7 @@ class QueueWidget extends StatelessWidget {
   final Function(int index)? onTapItem;
   final int? highlightIndex;
   final String languageCode;
+  final bool borderless;
 
   const QueueWidget({
     super.key,
@@ -135,6 +136,7 @@ class QueueWidget extends StatelessWidget {
     this.onTapItem,
     this.highlightIndex,
     this.languageCode = 'en',
+    this.borderless = false,
   });
 
   @override
@@ -143,6 +145,66 @@ class QueueWidget extends StatelessWidget {
 
     final bool showSwapTip = onTapItem != null && colors.length > 1;
     final bool isAnyHighlighted = highlightIndex != null;
+
+    final Widget rowContent = Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Next ball (Primary) - index 0, not interactive
+        Opacity(
+          opacity: isAnyHighlighted ? 0.3 : 1.0,
+          child: InteractiveQueueBall(
+            color: colors[0],
+            size: 44,
+            isPrimary: true,
+          ),
+        ),
+        const SizedBox(width: 14),
+        
+        // Arrow Indicator
+        Icon(
+          Icons.arrow_forward_ios_rounded,
+          color: Colors.white.withValues(alpha: isAnyHighlighted ? 0.1 : 0.25),
+          size: 14,
+        ),
+        const SizedBox(width: 14),
+
+        // Second ball (index 1)
+        if (colors.length > 1) ...[
+          Opacity(
+            opacity: isAnyHighlighted ? (highlightIndex == 1 ? 1.0 : 0.2) : 0.75,
+            child: InteractiveQueueBall(
+              color: colors[1],
+              size: 32,
+              isPrimary: false,
+              isHighlighted: highlightIndex == 1,
+              onTap: onTapItem != null ? () => onTapItem!(1) : null,
+            ),
+          ),
+          const SizedBox(width: 12),
+        ],
+
+        // Third ball (index 2)
+        if (colors.length > 2) ...[
+          Opacity(
+            opacity: isAnyHighlighted ? (highlightIndex == 2 ? 1.0 : 0.2) : 0.75,
+            child: InteractiveQueueBall(
+              color: colors[2],
+              size: 32,
+              isPrimary: false,
+              isHighlighted: highlightIndex == 2,
+              onTap: onTapItem != null ? () => onTapItem!(2) : null,
+            ),
+          ),
+        ],
+      ],
+    );
+
+    if (borderless) {
+      return Center(
+        child: rowContent,
+      );
+    }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -177,59 +239,7 @@ class QueueWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Next ball (Primary) - index 0, not interactive
-              Opacity(
-                opacity: isAnyHighlighted ? 0.3 : 1.0,
-                child: InteractiveQueueBall(
-                  color: colors[0],
-                  size: 44,
-                  isPrimary: true,
-                ),
-              ),
-              const SizedBox(width: 14),
-              
-              // Arrow Indicator
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                color: Colors.white.withValues(alpha: isAnyHighlighted ? 0.1 : 0.25),
-                size: 14,
-              ),
-              const SizedBox(width: 14),
-
-              // Second ball (index 1)
-              if (colors.length > 1) ...[
-                Opacity(
-                  opacity: isAnyHighlighted ? (highlightIndex == 1 ? 1.0 : 0.2) : 0.75,
-                  child: InteractiveQueueBall(
-                    color: colors[1],
-                    size: 32,
-                    isPrimary: false,
-                    isHighlighted: highlightIndex == 1,
-                    onTap: onTapItem != null ? () => onTapItem!(1) : null,
-                  ),
-                ),
-                const SizedBox(width: 12),
-              ],
-
-              // Third ball (index 2)
-              if (colors.length > 2) ...[
-                Opacity(
-                  opacity: isAnyHighlighted ? (highlightIndex == 2 ? 1.0 : 0.2) : 0.75,
-                  child: InteractiveQueueBall(
-                    color: colors[2],
-                    size: 32,
-                    isPrimary: false,
-                    isHighlighted: highlightIndex == 2,
-                    onTap: onTapItem != null ? () => onTapItem!(2) : null,
-                  ),
-                ),
-              ],
-            ],
-          ),
+          rowContent,
         ],
       ),
     );

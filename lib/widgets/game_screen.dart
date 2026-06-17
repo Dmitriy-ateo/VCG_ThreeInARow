@@ -804,6 +804,14 @@ class _GameScreenState extends State<GameScreen> {
                 children: [
                   // Header: Title, Subtitle, and Stats
                   _buildHeader(),
+                  const SizedBox(height: 8),
+                  QueueWidget(
+                    colors: _gameState.upcomingQueue,
+                    onTapItem: _gameState.swapQueueItem,
+                    highlightIndex: _gameState.level == 1 && _gameState.tutorialStep == 2 ? 1 : null,
+                    languageCode: _gameState.currentLanguage,
+                    borderless: true,
+                  ),
                   const SizedBox(height: 12),
                   _buildTutorialCard(),
                   
@@ -817,21 +825,12 @@ class _GameScreenState extends State<GameScreen> {
                     ),
                   ),
 
-                  // Upcoming Items queue and Bomb Inventory
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Flexible(
-                        child: QueueWidget(
-                          colors: _gameState.upcomingQueue,
-                          onTapItem: _gameState.swapQueueItem,
-                          highlightIndex: _gameState.level == 1 && _gameState.tutorialStep == 2 ? 1 : null,
-                          languageCode: _gameState.currentLanguage,
-                        ),
-                      ),
-                      if (_gameState.level >= 5 && !_gameState.isDailyEvent) ...[
-                        const SizedBox(width: 12),
+                  // Bottom Action buttons row
+                  if (_gameState.level >= 5 && !_gameState.isDailyEvent) ...[
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
                         BombInventoryButton(
                           count: _gameState.bombInventoryCount,
                           isActive: _gameState.isBombModeActive,
@@ -840,9 +839,11 @@ class _GameScreenState extends State<GameScreen> {
                           onTap: _gameState.toggleBombMode,
                         ),
                       ],
-                    ],
-                  ),
-                  const SizedBox(height: 12),
+                    ),
+                    const SizedBox(height: 12),
+                  ] else ...[
+                    const SizedBox(height: 12),
+                  ],
                 ],
               ),
             ),

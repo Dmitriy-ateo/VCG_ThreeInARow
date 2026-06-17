@@ -804,7 +804,7 @@ class _GameScreenState extends State<GameScreen> {
                 children: [
                   // Header: Title, Subtitle, and Stats
                   _buildHeader(),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 20),
                   QueueWidget(
                     colors: _gameState.upcomingQueue,
                     onTapItem: _gameState.swapQueueItem,
@@ -812,7 +812,7 @@ class _GameScreenState extends State<GameScreen> {
                     languageCode: _gameState.currentLanguage,
                     borderless: true,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 20),
                   _buildTutorialCard(),
                   
                   // The Hexagonal Board

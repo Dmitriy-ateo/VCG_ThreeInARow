@@ -58,9 +58,11 @@ class GameState extends ChangeNotifier {
   void resetProgress() {
     level = 1;
     highScore = 0;
+    bombInventoryCount = 0;
     if (_prefs != null) {
       _prefs!.setInt('unlocked_level', 1);
       _prefs!.setInt('high_score', 0);
+      _prefs!.setInt('bomb_inventory', 0);
     }
     startNewGame(BoardShapeType.hexagon, 3);
   }
@@ -89,6 +91,7 @@ class GameState extends ChangeNotifier {
       _prefs = await SharedPreferences.getInstance();
       level = _prefs!.getInt('unlocked_level') ?? 1;
       highScore = _prefs!.getInt('high_score') ?? 0;
+      bombInventoryCount = _prefs!.getInt('bomb_inventory') ?? 0;
       _currentLanguage = _prefs!.getString('language_code') ?? 'en';
     } catch (e) {
       debugPrint('Warning: SharedPreferences initialization failed ($e). Falling back to in-memory state.');
@@ -258,7 +261,6 @@ class GameState extends ChangeNotifier {
     isLevelCompleted = false;
     isAnimating = false;
     score = 0;
-    bombInventoryCount = 0;
     isBombModeActive = false;
     
     if (level == 1) {
@@ -375,7 +377,6 @@ class GameState extends ChangeNotifier {
     isLevelCompleted = false;
     isAnimating = false;
     score = 0;
-    bombInventoryCount = 0;
     isBombModeActive = false;
 
     // Generate date seed: YYYYMMDD
@@ -489,6 +490,9 @@ class GameState extends ChangeNotifier {
       isAnimating = true;
       isBombModeActive = false;
       bombInventoryCount = max(0, bombInventoryCount - 1);
+      if (_prefs != null) {
+        _prefs!.setInt('bomb_inventory', bombInventoryCount);
+      }
       notifyListeners();
 
       // Gather coordinates to clear: coord itself + its 6 neighbors
@@ -608,6 +612,9 @@ class GameState extends ChangeNotifier {
 
       if (addBombToInventory) {
         bombInventoryCount++;
+        if (_prefs != null) {
+          _prefs!.setInt('bomb_inventory', bombInventoryCount);
+        }
       }
       
       _clearNewFlags();
@@ -677,6 +684,9 @@ class GameState extends ChangeNotifier {
 
           if (level >= 5 && randomMatches.length >= 4) {
             bombInventoryCount++;
+            if (_prefs != null) {
+              _prefs!.setInt('bomb_inventory', bombInventoryCount);
+            }
           }
         }
       }

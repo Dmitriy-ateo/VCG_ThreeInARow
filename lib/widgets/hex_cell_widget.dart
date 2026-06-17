@@ -143,8 +143,8 @@ class _HexCellWidgetState extends State<HexCellWidget> with TickerProviderStateM
                 return CustomPaint(
                   size: Size(width, height),
                   painter: HexagonPainter(
-                    fillColor: const Color(0xFF0B0A18),
-                    borderColor: const Color(0xFFFFD700).withOpacity(opacity),
+                    fillColor: const Color(0xFF18172D),
+                    borderColor: const Color(0xFFFFD700).withValues(alpha: opacity),
                     borderWidth: borderWidth,
                   ),
                 );
@@ -153,10 +153,10 @@ class _HexCellWidgetState extends State<HexCellWidget> with TickerProviderStateM
           : CustomPaint(
               size: Size(width, height),
               painter: HexagonPainter(
-                fillColor: const Color(0xFF0B0A18),
+                fillColor: const Color(0xFF18172D),
                 borderColor: widget.isEmpty
-                    ? const Color(0xFF00F0FF).withValues(alpha: 0.4)
-                    : const Color(0xFFBD00FF).withValues(alpha: 0.2),
+                    ? const Color(0xFF00F0FF).withValues(alpha: 0.65)
+                    : const Color(0xFFBD00FF).withValues(alpha: 0.3),
                 borderWidth: widget.isEmpty ? 1.5 : 1.0,
               ),
             ),

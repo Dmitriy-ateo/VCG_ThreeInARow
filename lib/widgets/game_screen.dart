@@ -679,33 +679,35 @@ class _GameScreenState extends State<GameScreen> {
             ),
           ],
         ),
-        child: Row(
+        child: Stack(
+          clipBehavior: Clip.none,
           children: [
-            // Glowing Icon
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: accentColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: accentColor.withValues(alpha: 0.25),
+            Row(
+              children: [
+                // Glowing Icon
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: accentColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: accentColor.withValues(alpha: 0.25),
+                    ),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: accentColor,
+                    size: 26,
+                  ),
                 ),
-              ),
-              child: Icon(
-                icon,
-                color: accentColor,
-                size: 26,
-              ),
-            ),
-            const SizedBox(width: 16),
-            // Text Details
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+                const SizedBox(width: 16),
+                // Text Details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Flexible(
+                      Padding(
+                        padding: EdgeInsets.only(right: badgeText != null ? 80.0 : 0.0),
                         child: Text(
                           title,
                           style: const TextStyle(
@@ -718,44 +720,46 @@ class _GameScreenState extends State<GameScreen> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (badgeText != null) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: badgeColor!.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: badgeColor.withValues(alpha: 0.4)),
-                          ),
-                          child: Text(
-                            badgeText,
-                            style: TextStyle(
-                              color: badgeColor,
-                              fontSize: 7.5,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.4),
+                          fontSize: 12,
                         ),
-                      ],
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
+                ),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: Colors.white.withValues(alpha: 0.2),
+                  size: 16,
+                ),
+              ],
+            ),
+            if (badgeText != null)
+              Positioned(
+                top: 0,
+                right: 28, // Positioned near the right border, just to the left of the arrow icon area
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: badgeColor!.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: badgeColor.withValues(alpha: 0.4)),
+                  ),
+                  child: Text(
+                    badgeText,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.4),
-                      fontSize: 12,
+                      color: badgeColor,
+                      fontSize: 7.5,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.5,
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
-            Icon(
-              Icons.arrow_forward_ios_rounded,
-              color: Colors.white.withValues(alpha: 0.2),
-              size: 16,
-            ),
           ],
         ),
       ),

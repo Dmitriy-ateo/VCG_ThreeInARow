@@ -348,10 +348,8 @@ class GameState extends ChangeNotifier {
       );
     } else {
       tutorialStep = 0;
-      targetsLeft = targetSpawnsCount;
-
       // 1. Spawn target items on start
-      _spawnTargetItems(targetsLeft);
+      targetsLeft = _spawnTargetItems(targetSpawnsCount);
 
       // 2. Initialize upcoming queue
       upcomingQueue = List.generate(3, (_) => _getRandomColor());
@@ -384,10 +382,8 @@ class GameState extends ChangeNotifier {
     final int dateSeed = now.year * 10000 + now.month * 100 + now.day;
     final seededRandom = Random(dateSeed);
 
-    targetsLeft = 4;
-
     // 1. Spawn target items with standard colors using seeded random
-    _spawnTargetItemsSeeded(targetsLeft, seededRandom);
+    targetsLeft = _spawnTargetItemsSeeded(4, seededRandom);
 
     // 2. Initialize upcoming queue using seeded colors
     upcomingQueue = List.generate(3, (_) => _getRandomColorSeeded(seededRandom));
@@ -707,9 +703,9 @@ class GameState extends ChangeNotifier {
   }
 
   // Spawns targets at random empty cells on start
-  void _spawnTargetItems(int count) {
+  int _spawnTargetItems(int count) {
     List<HexCoord> emptyCells = getEmptyCells();
-    if (emptyCells.isEmpty) return;
+    if (emptyCells.isEmpty) return 0;
 
     int actualToSpawn = min(count, emptyCells.length);
     emptyCells.shuffle(_random);
@@ -723,6 +719,7 @@ class GameState extends ChangeNotifier {
         isTarget: true,
       );
     }
+    return actualToSpawn;
   }
 
   // Spawns up to `count` items at random empty cells
@@ -751,9 +748,9 @@ class GameState extends ChangeNotifier {
     return activePool[rand.nextInt(activePool.length)];
   }
 
-  void _spawnTargetItemsSeeded(int count, Random rand) {
+  int _spawnTargetItemsSeeded(int count, Random rand) {
     List<HexCoord> emptyCells = getEmptyCells();
-    if (emptyCells.isEmpty) return;
+    if (emptyCells.isEmpty) return 0;
 
     int actualToSpawn = min(count, emptyCells.length);
     emptyCells = _seededShuffle(emptyCells, rand);
@@ -767,6 +764,7 @@ class GameState extends ChangeNotifier {
         isTarget: true,
       );
     }
+    return actualToSpawn;
   }
 
   bool _spawnRandomItemsSeeded(int count, Random rand, {bool initial = false}) {
@@ -884,7 +882,11 @@ class GameState extends ChangeNotifier {
   }
 
   void _checkLevelOrGameOver() {
-    if (targetsLeft == 0) {
+    // Safety check: count actual target items remaining in the grid
+    final int actualTargetsInGrid = grid.values.where((item) => item.isTarget).length;
+    
+    if (targetsLeft == 0 || actualTargetsInGrid == 0) {
+      targetsLeft = 0; // Sync the count
       isLevelCompleted = true;
       if (isDailyEvent) {
         _markDailyCompletedToday();

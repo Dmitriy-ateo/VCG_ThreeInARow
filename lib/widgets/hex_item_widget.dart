@@ -9,14 +9,14 @@ class GlassBallPainter extends CustomPainter {
   final bool isTarget;
   final bool isBomb;
   final bool isExploding;
-  final double explosionProgress;
+  final double animationValue;
 
   GlassBallPainter({
     required this.color,
     this.isTarget = false,
     this.isBomb = false,
     this.isExploding = false,
-    this.explosionProgress = 0.0,
+    this.animationValue = 0.0,
   });
 
   @override
@@ -25,6 +25,11 @@ class GlassBallPainter extends CustomPainter {
     final double h = size.height;
     final double radius = min(w, h) / 2.0;
     final center = Offset(w / 2.0, h / 2.0);
+
+    if (isBomb && isExploding) {
+      _paintBlackHoleExplosion(canvas, center, radius, w, h);
+      return;
+    }
 
     // Draw fuse behind the bomb sphere
     if (isBomb) {
@@ -71,7 +76,6 @@ class GlassBallPainter extends CustomPainter {
     canvas.drawCircle(center, radius - 2, basePaint);
 
     // 4. Draw inner glowing core
-    // Bombs have a glowing red/white core
     final corePaint = Paint()
       ..shader = RadialGradient(
         colors: isBomb
@@ -118,7 +122,7 @@ class GlassBallPainter extends CustomPainter {
     }
 
     // Draw fuse spark (if not exploded yet)
-    if (isBomb && (!isExploding || explosionProgress == 0.0)) {
+    if (isBomb) {
       final sparkCenter = Offset(center.dx - radius * 0.45, center.dy - radius * 1.25);
       
       // Glow behind spark
@@ -146,57 +150,140 @@ class GlassBallPainter extends CustomPainter {
         );
       }
     }
+  }
 
-    if (isExploding && explosionProgress > 0.0) {
-      // Draw expanding fiery shockwave ring
-      final double waveRadius = radius * 3.0 * explosionProgress;
-      final double opacity = (1.0 - explosionProgress).clamp(0.0, 1.0);
+  void _paintBlackHoleExplosion(Canvas canvas, Offset center, double radius, double w, double h) {
+    final double t = animationValue;
+    
+    // Phase 1: Black Hole Collapse / Implosion (0.0 to 0.55)
+    // Phase 2: Singularity / Critical Mass (0.55 to 0.65)
+    // Phase 3: Supernova Blast / Shockwave (0.65 to 1.00)
+    
+    if (t < 0.55) {
+      final double progress = t / 0.55;
       
-      // Blast wave paint (orange-red neon stroke)
+      // 1. Draw Space-Time Warped Grid (funneling into center)
+      _paintSpaceTimeGrid(canvas, center, radius, progress, 0.0);
+      
+      // 2. Accretion Disk (swirling colorful neon rings)
+      _paintAccretionDisk(canvas, center, radius, t, progress);
+      
+      // 3. Gravitational Lensing (Einstein Ring refraction)
+      _paintEinsteinRing(canvas, center, radius, progress, 0.0);
+      
+      // 4. Event Horizon (deep black sphere void)
+      final double horizonRadius = radius * 0.75 * progress;
+      final blackPaint = Paint()
+        ..color = Colors.black
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(center, horizonRadius, blackPaint);
+      
+      // Corona border
+      final coronaPaint = Paint()
+        ..color = const Color(0xFFFF3377).withValues(alpha: 0.9)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.0);
+      canvas.drawCircle(center, horizonRadius, coronaPaint);
+      
+    } else if (t < 0.65) {
+      final double progress = (t - 0.55) / 0.10;
+      
+      // Space-time grid is distorted to the maximum and begins to break
+      _paintSpaceTimeGrid(canvas, center, radius, 1.0, progress);
+      
+      // Einstein Ring flares up
+      _paintEinsteinRing(canvas, center, radius, 1.0, progress);
+      
+      // Singularity point: event horizon collapses, replaced by white flash
+      final double singularityRadius = radius * 0.75 * (1.0 - progress);
+      if (singularityRadius > 1.0) {
+        final blackPaint = Paint()
+          ..color = Colors.black
+          ..style = PaintingStyle.fill;
+        canvas.drawCircle(center, singularityRadius, blackPaint);
+      }
+      
+      // Bright white flash expanding in the center
+      final flashPaint = Paint()
+        ..shader = RadialGradient(
+          colors: [
+            Colors.white,
+            const Color(0xFF00E5FF).withValues(alpha: 0.8),
+            Colors.transparent,
+          ],
+          stops: const [0.0, 0.4, 1.0],
+        ).createShader(Rect.fromCircle(center: center, radius: radius * 2.0 * progress));
+      canvas.drawCircle(center, radius * 2.0 * progress, flashPaint);
+      
+    } else {
+      final double blastProgress = (t - 0.65) / 0.35;
+      final double opacity = (1.0 - blastProgress).clamp(0.0, 1.0);
+      
+      // 1. Shockwave rings expanding rapidly
+      final double waveRadius = radius * 5.0 * blastProgress;
+      
+      // Fire ring paint (orange-red neon stroke)
       final wavePaint = Paint()
         ..color = const Color(0xFFFF4500).withValues(alpha: opacity)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = (6.0 - 4.0 * explosionProgress)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4.0);
+        ..strokeWidth = (8.0 - 6.0 * blastProgress)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5.0);
       canvas.drawCircle(center, waveRadius, wavePaint);
-
+      
       // Inner yellow flame ring
       final innerWavePaint = Paint()
-        ..color = const Color(0xFFFFD700).withValues(alpha: opacity)
+        ..color = const Color(0xFFFFEA00).withValues(alpha: opacity)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 3.0;
+        ..strokeWidth = (4.0 - 2.0 * blastProgress);
       canvas.drawCircle(center, waveRadius * 0.85, innerWavePaint);
-
-      // Core fire expansion
+      
+      // 2. Blast Core expansion
       final coreFirePaint = Paint()
         ..shader = RadialGradient(
           colors: [
-            Colors.white.withValues(alpha: opacity * 0.9),
-            const Color(0xFFFFD700).withValues(alpha: opacity * 0.7),
-            const Color(0xFFFF4500).withValues(alpha: opacity * 0.3),
+            Colors.white.withValues(alpha: opacity * 0.95),
+            const Color(0xFFFFEA00).withValues(alpha: opacity * 0.75),
+            const Color(0xFFFF3333).withValues(alpha: opacity * 0.35),
             Colors.transparent,
           ],
-          stops: const [0.0, 0.3, 0.7, 1.0],
+          stops: const [0.0, 0.25, 0.7, 1.0],
         ).createShader(Rect.fromCircle(center: center, radius: waveRadius));
       canvas.drawCircle(center, waveRadius, coreFirePaint);
-
-      // Draw flying fire particles
-      final double particleDistance = radius * 2.8 * explosionProgress;
-      final paintParticle = Paint()
-        ..style = PaintingStyle.fill;
-
+      
+      // 3. Shockwave Rays (laser lines shooting out radially)
+      final rayPaint = Paint()
+        ..color = Colors.white.withValues(alpha: opacity * 0.8)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.0);
       for (int i = 0; i < 8; i++) {
-        final double angle = i * (2 * pi / 8) + (i * 0.5);
-        final double px = center.dx + cos(angle) * particleDistance;
-        final double py = center.dy + sin(angle) * particleDistance;
+        final double angle = i * (2 * pi / 8) + (t * 2.0);
+        final double startDist = radius * 0.5 * blastProgress;
+        final double endDist = waveRadius * 1.1;
+        canvas.drawLine(
+          center + Offset(cos(angle) * startDist, sin(angle) * startDist),
+          center + Offset(cos(angle) * endDist, sin(angle) * endDist),
+          rayPaint,
+        );
+      }
+      
+      // 4. Draw flying particles
+      final double particleDistance = radius * 4.5 * blastProgress;
+      final paintParticle = Paint()..style = PaintingStyle.fill;
+      
+      for (int i = 0; i < 12; i++) {
+        final double angle = i * (2 * pi / 12) + (i * 0.4);
+        final double px = center.dx + cos(angle) * (particleDistance * (0.85 + 0.15 * sin(i * 1.5)));
+        final double py = center.dy + sin(angle) * (particleDistance * (0.85 + 0.15 * sin(i * 1.5)));
         
-        final double pRadius = radius * 0.16 * (1.0 - explosionProgress);
+        final double pRadius = radius * 0.22 * (1.0 - blastProgress);
         if (pRadius > 0.5) {
           paintParticle.shader = RadialGradient(
             colors: [
               Colors.white.withValues(alpha: opacity),
-              const Color(0xFFFFD700).withValues(alpha: opacity * 0.8),
-              const Color(0xFFFF4500).withValues(alpha: 0.0),
+              const Color(0xFFFFEA00).withValues(alpha: opacity * 0.9),
+              const Color(0xFFFF3333).withValues(alpha: 0.0),
             ],
           ).createShader(Rect.fromCircle(center: Offset(px, py), radius: pRadius));
           
@@ -204,6 +291,124 @@ class GlassBallPainter extends CustomPainter {
         }
       }
     }
+  }
+
+  void _paintSpaceTimeGrid(Canvas canvas, Offset center, double radius, double progress, double dissolveProgress) {
+    final double opacity = (1.0 - dissolveProgress).clamp(0.0, 1.0);
+    if (opacity <= 0.0) return;
+    
+    final gridPaint = Paint()
+      ..color = const Color(0xFF00E5FF).withValues(alpha: 0.18 * opacity)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.8;
+      
+    final gridPurplePaint = Paint()
+      ..color = const Color(0xFFD500F9).withValues(alpha: 0.12 * opacity)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.8;
+
+    final double maxGridRadius = radius * 3.5;
+    
+    Offset warpPoint(double r, double theta) {
+      final double horizon = radius * 0.45 * progress;
+      final double pinchStrength = 0.75 * progress;
+      final double decay = exp(-r / (radius * 1.6));
+      
+      double rWarped = r - (r - horizon) * pinchStrength * decay;
+      if (rWarped < horizon) rWarped = horizon;
+      
+      final double spinStrength = 2.5 * progress;
+      final double thetaWarped = theta + spinStrength * exp(-r / (radius * 0.8));
+      
+      return center + Offset(cos(thetaWarped) * rWarped, sin(thetaWarped) * rWarped);
+    }
+    
+    // Draw concentric warped circles
+    for (int k = 1; k <= 7; k++) {
+      final double rNominal = radius * (k * 0.5);
+      final circlePath = Path();
+      
+      for (int i = 0; i <= 36; i++) {
+        final double theta = i * (2 * pi / 36);
+        final p = warpPoint(rNominal, theta);
+        if (i == 0) {
+          circlePath.moveTo(p.dx, p.dy);
+        } else {
+          circlePath.lineTo(p.dx, p.dy);
+        }
+      }
+      
+      canvas.drawPath(circlePath, k % 2 == 0 ? gridPaint : gridPurplePaint);
+    }
+    
+    // Draw 12 radial warped lines
+    for (int m = 0; m < 12; m++) {
+      final double thetaNominal = m * (2 * pi / 12);
+      final radialPath = Path();
+      
+      final double rStart = radius * 0.2;
+      final double rEnd = maxGridRadius;
+      
+      for (double r = rStart; r <= rEnd; r += 5.0) {
+        final p = warpPoint(r, thetaNominal);
+        if (r == rStart) {
+          radialPath.moveTo(p.dx, p.dy);
+        } else {
+          radialPath.lineTo(p.dx, p.dy);
+        }
+      }
+      
+      canvas.drawPath(radialPath, m % 2 == 0 ? gridPaint : gridPurplePaint);
+    }
+  }
+
+  void _paintAccretionDisk(Canvas canvas, Offset center, double radius, double t, double progress) {
+    final double diskRotation = t * 15.0;
+    final diskPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.0
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.0);
+      
+    for (int i = 0; i < 3; i++) {
+      final double rDisk = radius * (0.7 + i * 0.2) * (1.0 - 0.25 * progress);
+      final double opacity = (0.35 + 0.25 * sin(t * 12 + i)) * progress;
+      if (opacity <= 0.0) continue;
+      
+      diskPaint.shader = SweepGradient(
+        colors: [
+          const Color(0xFFFF5500).withValues(alpha: opacity),
+          const Color(0xFFFF0077).withValues(alpha: opacity),
+          const Color(0xFF00E5FF).withValues(alpha: opacity),
+          const Color(0xFFFF5500).withValues(alpha: opacity),
+        ],
+        transform: GradientRotation(diskRotation + i * pi / 3.0),
+      ).createShader(Rect.fromCircle(center: center, radius: rDisk));
+      
+      canvas.drawCircle(center, rDisk, diskPaint);
+    }
+  }
+
+  void _paintEinsteinRing(Canvas canvas, Offset center, double radius, double progress, double dissolveProgress) {
+    final double opacity = (progress * (1.0 - dissolveProgress)).clamp(0.0, 1.0);
+    if (opacity <= 0.0) return;
+    
+    final double ringRadius = radius * 0.75 * progress + 6.0;
+    
+    // Outer glow
+    final haloPaint = Paint()
+      ..color = const Color(0xFFD500F9).withValues(alpha: 0.45 * opacity)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4.0
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.0);
+    canvas.drawCircle(center, ringRadius, haloPaint);
+    
+    // Core ring
+    final corePaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.85 * opacity)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.5);
+    canvas.drawCircle(center, ringRadius, corePaint);
   }
 
   void _drawStar(Canvas canvas, Offset center, double starRadius) {
@@ -224,14 +429,12 @@ class GlassBallPainter extends CustomPainter {
     }
     starPath.close();
 
-    // Draw gold neon backing glow
     final glowPaint = Paint()
       ..color = const Color(0xFFFFEA00)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.0;
     canvas.drawPath(starPath, glowPaint);
 
-    // Draw solid white star center
     final fillPaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.fill;
@@ -244,7 +447,7 @@ class GlassBallPainter extends CustomPainter {
         oldDelegate.isTarget != isTarget ||
         oldDelegate.isBomb != isBomb ||
         oldDelegate.isExploding != isExploding ||
-        oldDelegate.explosionProgress != explosionProgress;
+        oldDelegate.animationValue != animationValue;
   }
 }
 
@@ -270,19 +473,20 @@ class _HexItemWidgetState extends State<HexItemWidget> with TickerProviderStateM
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _opacityAnimation;
+  Animation<Offset>? _pullAnimation;
 
   @override
   void initState() {
     super.initState();
+    _pullAnimation = null;
     
     if (widget.item.isBomb && widget.item.isMatched) {
-      // Newly placed detonating bomb (550ms multi-stage explosion timeline)
+      // Newly placed detonating bomb (850ms multi-stage black hole & explosion timeline)
       _controller = AnimationController(
         vsync: this,
-        duration: const Duration(milliseconds: 550),
+        duration: const Duration(milliseconds: 850),
       );
       
-      // Setup default fallback animations to satisfy Late initialization
       _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(_controller);
       _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(_controller);
       
@@ -311,14 +515,12 @@ class _HexItemWidgetState extends State<HexItemWidget> with TickerProviderStateM
   void didUpdateWidget(covariant HexItemWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     
-    // If the item status changes to matched, animate exit
     if (widget.item.isMatched && !oldWidget.item.isMatched) {
       if (widget.item.isBomb) {
-        _controller.duration = const Duration(milliseconds: 550);
+        _controller.duration = const Duration(milliseconds: 850);
         _controller.forward(from: 0.0);
       } else {
         // Detonation propagation wave delay:
-        // Find if there is a detonating bomb in the grid to calculate distance delay
         final bombEntry = widget.gameState.grid.entries.cast<MapEntry<HexCoord, GameItem>?>().firstWhere(
           (e) => e != null && e.value.isBomb && e.value.isMatched,
           orElse: () => null,
@@ -328,17 +530,37 @@ class _HexItemWidgetState extends State<HexItemWidget> with TickerProviderStateM
         if (bombEntry != null) {
           final int dist = widget.cell.distance(bombEntry.key);
           delayMs = dist * 100; // 100ms propagation delay per cell ring
+          
+          if (dist > 0) {
+            final double dirX = (bombEntry.key.q - widget.cell.q) * sqrt(3) + 
+                                (bombEntry.key.r - widget.cell.r) * (sqrt(3) / 2.0);
+            final double dirY = (bombEntry.key.r - widget.cell.r) * 1.5;
+            
+            _pullAnimation = Tween<Offset>(
+              begin: Offset.zero,
+              end: Offset(dirX * widget.size, dirY * widget.size),
+            ).animate(CurvedAnimation(
+              parent: _controller,
+              curve: Curves.easeInQuint,
+            ));
+          }
         }
 
         _scaleAnimation = Tween<double>(
           begin: _controller.value,
           end: 0.0,
-        ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInBack));
+        ).animate(CurvedAnimation(
+          parent: _controller,
+          curve: Curves.easeInQuint,
+        ));
 
         _opacityAnimation = Tween<double>(
           begin: _controller.value,
           end: 0.0,
-        ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
+        ).animate(CurvedAnimation(
+          parent: _controller,
+          curve: Curves.easeIn,
+        ));
 
         _controller.duration = const Duration(milliseconds: 250);
 
@@ -374,46 +596,32 @@ class _HexItemWidgetState extends State<HexItemWidget> with TickerProviderStateM
         
         double currentScale = 1.0;
         double currentOpacity = 1.0;
-        double explosionProgress = 0.0;
-        double dx = 0.0;
-        double dy = 0.0;
         Color bombColor = color;
 
         if (isExploding) {
-          if (t < 0.20) {
-            // 1. Swell phase (0% - 20%): Bomb scales up from 1.0 to 1.4, heats up to red
-            final double localT = t / 0.20;
-            currentScale = 1.0 + 0.4 * localT;
+          if (t < 0.55) {
+            // Implosion phase: bomb sphere collapses/shrinks
+            final double localT = t / 0.55;
+            currentScale = 1.0 - 0.7 * localT;
             currentOpacity = 1.0;
-            explosionProgress = 0.0;
-            bombColor = Color.lerp(Colors.grey, const Color(0xFFFF3333), localT)!;
-          } else if (t < 0.40) {
-            // 2. Shake & Superheat phase (20% - 40%): Bomb swells to 1.55, heats to white, vibrates
-            final double localT = (t - 0.20) / 0.20;
-            currentScale = 1.4 + 0.15 * localT;
-            currentOpacity = 1.0;
-            explosionProgress = 0.0;
-            bombColor = Color.lerp(const Color(0xFFFF3333), Colors.white, localT)!;
-            
-            // Pseudo-random high frequency shake translation
-            final random = Random((t * 1000).toInt());
-            dx = (random.nextDouble() - 0.5) * 8.0;
-            dy = (random.nextDouble() - 0.5) * 8.0;
+            bombColor = Color.lerp(color, Colors.black, localT)!;
           } else {
-            // 3. Outward Blast & Dissolve phase (40% - 100%): Expand rapidly, fade, draw shockwave & debris
-            final double localT = (t - 0.40) / 0.60;
-            currentScale = 1.55 + 2.05 * localT; // expanding up to 3.6x
-            currentOpacity = 1.0 - localT;
-            explosionProgress = localT;
-            bombColor = Colors.white;
+            // Singularity & Blast phase: bomb sphere is fully crushed/dissolved
+            currentScale = 0.0;
+            currentOpacity = 0.0;
           }
         } else {
           currentScale = _scaleAnimation.value;
           currentOpacity = _opacityAnimation.value;
         }
 
+        Offset translationOffset = Offset.zero;
+        if (_pullAnimation != null && widget.item.isMatched && !widget.item.isBomb) {
+          translationOffset = _pullAnimation!.value;
+        }
+
         return Transform.translate(
-          offset: Offset(dx, dy),
+          offset: translationOffset,
           child: Transform.scale(
             scale: currentScale,
             child: Opacity(
@@ -428,7 +636,7 @@ class _HexItemWidgetState extends State<HexItemWidget> with TickerProviderStateM
                     isTarget: widget.item.isTarget,
                     isBomb: widget.item.isBomb,
                     isExploding: isExploding,
-                    explosionProgress: explosionProgress,
+                    animationValue: isExploding ? t : 0.0,
                   ),
                 ),
               ),

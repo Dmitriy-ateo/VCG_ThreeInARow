@@ -534,7 +534,7 @@ class GameState extends ChangeNotifier {
       }
       notifyListeners();
 
-      await Future.delayed(const Duration(milliseconds: 550));
+      await Future.delayed(const Duration(milliseconds: 850));
 
       for (var c in resolvedClear) {
         grid.remove(c);
@@ -599,7 +599,8 @@ class GameState extends ChangeNotifier {
       }
       notifyListeners();
 
-      await Future.delayed(const Duration(milliseconds: 300));
+      bool hasBomb = resolvedClear.any((c) => grid[c]?.isBomb == true);
+      await Future.delayed(Duration(milliseconds: hasBomb ? 850 : 300));
 
       for (var c in resolvedClear) {
         grid.remove(c);
@@ -667,7 +668,8 @@ class GameState extends ChangeNotifier {
           }
           notifyListeners();
 
-          await Future.delayed(const Duration(milliseconds: 300));
+          bool hasBomb = resolvedRandomClear.any((c) => grid[c]?.isBomb == true);
+          await Future.delayed(Duration(milliseconds: hasBomb ? 850 : 300));
 
           for (var c in resolvedRandomClear) {
             grid.remove(c);

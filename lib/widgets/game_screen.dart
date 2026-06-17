@@ -706,19 +706,16 @@ class _GameScreenState extends State<GameScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Padding(
-                        padding: EdgeInsets.only(right: badgeText != null ? 50.0 : 0.0),
-                        child: Text(
-                          title,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.5,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -741,8 +738,8 @@ class _GameScreenState extends State<GameScreen> {
           ),
           if (badgeText != null)
             Positioned(
-              top: 12,
-              right: 16, // Aligned directly near the top-right card border
+              top: -8, // Center vertically on the card's top border
+              right: 28, // Positioned on the flat portion of the top-right border
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
